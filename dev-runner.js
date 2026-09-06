@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename);
 
 const isWindows = process.platform === 'win32';
 const npmCmd = isWindows ? 'npm.cmd' : 'npm';
-const SERVER_PORT_START = 5000;
-const CLIENT_PORT = 3000;
+const SERVER_PORT_START = Number(process.env.PORT) || 5000;
+const CLIENT_PORT_START = Number(process.env.CLIENT_PORT) || 3000;
 
 function getNetworkIpAddresses() {
   const interfaces = os.networkInterfaces();
@@ -39,10 +39,10 @@ async function isPortFree(port) {
 }
 
 async function findFreePort(startPort) {
-  for (let port = startPort; port < startPort + 20; port++) {
+  for (let port = startPort; port < startPort + 50; port++) {
     if (await isPortFree(port)) return port;
   }
-  throw new Error(`Tidak menemukan port backend kosong mulai dari ${startPort}.`);
+  throw new Error(`Tidak menemukan port kosong mulai dari ${startPort}.`);
 }
 
 console.log('\n======================================================');
@@ -50,12 +50,13 @@ console.log('🚀 Starting Local AI Affiliate Clipper Server...');
 console.log('======================================================');
 
 const serverPort = await findFreePort(SERVER_PORT_START);
+const clientPort = await findFreePort(CLIENT_PORT_START);
 const networkIps = getNetworkIpAddresses();
 
-console.log(`\n📱 Local:   http://localhost:${CLIENT_PORT}`);
+console.log(`\n📱 Local:   http://localhost:${clientPort}`);
 if (networkIps.length > 0) {
   networkIps.forEach((ip) => {
-    console.log(`💻 Network: http://${ip}:${CLIENT_PORT} (Akses dari PC / HP lain di Wi-Fi yang sama)`);
+    console.log(`💻 Network: http://${ip}:${clientPort} (Akses dari PC / HP lain di Wi-Fi yang sama)`);
   });
 }
 console.log(`🌐 Backend: http://0.0.0.0:${serverPort}\n`);
@@ -84,7 +85,7 @@ function startServerProcess() {
 
 startServerProcess();
 
-const clientProcess = spawn(npmCmd, ['run', 'dev', '--', '--host', '0.0.0.0', '--port', String(CLIENT_PORT)], {
+const clientProcess = spawn(npmCmd, ['run', 'dev', '--', '--host', '0.0.0.0', '--port', String(clientPort)], {
   cwd: path.join(__dirname, 'client'),
   env: {
     ...process.env,
