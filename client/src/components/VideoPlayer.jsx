@@ -10,9 +10,12 @@ export default function VideoPlayer({ result }) {
   const [isOpeningFolder, setIsOpeningFolder] = useState(false);
   const [openFolderSuccess, setOpenFolderSuccess] = useState(false);
 
+  const [isVideoLandscape, setIsVideoLandscape] = useState(false);
+
   if (!result) return null;
 
   const isFinal = result.stage === 'completed' || result.hasFinalVideo || !!result.finalFileName;
+  const isWide = isVideoLandscape || (isFinal && (result.aspectRatio === '16:9' || (!result.aspectRatio && true)));
   const currentVideoUrl = result.videoUrl || result.finalVideoUrl || result.silentVideoUrl;
   const currentDownloadUrl = result.downloadUrl || result.finalVideoUrl || result.videoUrl || result.silentVideoUrl;
   const currentLocalPath = result.finalLocalPath || result.silentLocalPath || result.localPath;
@@ -89,13 +92,13 @@ export default function VideoPlayer({ result }) {
           </div>
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span>{isFinal ? 'Video Final Siap Upload' : 'Preview 9:16 (Tanpa Suara)'}</span>
+              <span>{isFinal ? (isWide ? 'Video Final 16:9 (Link Aktif)' : 'Video Final 9:16 Siap Upload') : 'Preview 9:16 (Tanpa Suara)'}</span>
               <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
                 isFinal
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
               }`}>
-                {isFinal ? 'Subtitles Burned' : 'Stage 1 Output'}
+                {isFinal ? (isWide ? '16:9 YouTube Reguler' : '9:16 Shorts') : 'Stage 1 Output'}
               </span>
             </h3>
             <p className="text-xs text-slate-400 font-mono">
@@ -104,29 +107,39 @@ export default function VideoPlayer({ result }) {
           </div>
         </div>
 
-        {/* Timestamps & Brand badges */}
-        {result.highlight && (
-          <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-            {(result.hasProductBrand || result.highlight?.hasProductBrand) && (
-              <span className="px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 font-sans text-xs font-medium">
-                🏷️ Merek: {result.detectedBrand && result.detectedBrand !== 'none' ? result.detectedBrand : (result.highlight?.detectedBrand && result.highlight?.detectedBrand !== 'none' ? result.highlight.detectedBrand : 'Terdeteksi')} (No Mirror)
-              </span>
-            )}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono text-amber-400">
-              <Clock className="w-3.5 h-3.5" />
-              <span>
-                {highlightClips.length
-                  ? `${highlightClips.length} x 5s`
-                  : `${result.highlight.startTime} - ${result.highlight.endTime}`}
-              </span>
-              <span className="text-slate-500">({result.highlight.duration}s)</span>
-            </div>
-          </div>
-        )}
+        {/* Timestamps, Brand & Pillar color badges */}
+        <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+          {isWide && result.padColor && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-mono text-slate-200 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full border border-white/30" style={{ backgroundColor: result.padColor.hex }} />
+              <span>Pilar: {result.padColor.name}</span>
+            </span>
+          )}
+          {result.highlight && (
+            <>
+              {(result.hasProductBrand || result.highlight?.hasProductBrand) && (
+                <span className="px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 font-sans text-xs font-medium">
+                  🏷️ Merek: {result.detectedBrand && result.detectedBrand !== 'none' ? result.detectedBrand : (result.highlight?.detectedBrand && result.highlight?.detectedBrand !== 'none' ? result.highlight.detectedBrand : 'Terdeteksi')} (No Mirror)
+                </span>
+              )}
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono text-amber-400">
+                <Clock className="w-3.5 h-3.5" />
+                <span>
+                  {highlightClips.length
+                    ? `${highlightClips.length} x 5s`
+                    : `${result.highlight.startTime} - ${result.highlight.endTime}`}
+                </span>
+                <span className="text-slate-500">({result.highlight.duration}s)</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Video Container in 9:16 Portrait Frame */}
-      <div className="relative w-full max-w-[320px] aspect-[9/16] bg-black rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl shadow-black/80 group">
+      {/* Video Container in 16:9 Landscape or 9:16 Portrait Frame */}
+      <div className={`relative w-full ${
+        isWide ? 'max-w-[640px] aspect-video' : 'max-w-[320px] aspect-[9/16]'
+      } bg-black rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl shadow-black/80 group transition-all duration-300`}>
         
         <video
           key={currentVideoUrl}
@@ -134,9 +147,14 @@ export default function VideoPlayer({ result }) {
           src={currentVideoUrl}
           playsInline
           loop
+          onLoadedMetadata={(e) => {
+            if (e.target.videoWidth && e.target.videoHeight) {
+              setIsVideoLandscape(e.target.videoWidth > e.target.videoHeight);
+            }
+          }}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          className="w-full h-full object-cover cursor-pointer"
+          className="w-full h-full object-contain cursor-pointer"
           onClick={togglePlay}
         />
 

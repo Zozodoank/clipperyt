@@ -25,6 +25,7 @@ export default function App() {
     aiProvider: 'gemini',
     sceneDuration: 3.3,
     renderMode: 'stage_80',
+    aspectRatio: '16:9',
     hflip: false,
     speedMultiplier: 1,
     enableSubtitles: true,

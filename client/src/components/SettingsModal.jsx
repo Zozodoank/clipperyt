@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, Sliders, Volume2, Film, RefreshCw, Check, Bot, Sparkles, Layers } from 'lucide-react';
+import { X, Shield, Sliders, Volume2, Film, RefreshCw, Check, Bot, Sparkles, Layers, Monitor } from 'lucide-react';
 
 export default function SettingsModal({ isOpen, onClose, settings, setSettings, engineStatus }) {
   if (!isOpen) return null;
@@ -11,6 +11,7 @@ export default function SettingsModal({ isOpen, onClose, settings, setSettings, 
       aiProvider: engineStatus?.activeAiEngine || 'gemini',
       sceneDuration: 3.3,
       renderMode: 'stage_80',
+      aspectRatio: '16:9',
       hflip: false,
       speedMultiplier: 1,
       enableSubtitles: true,
@@ -245,6 +246,60 @@ export default function SettingsModal({ isOpen, onClose, settings, setSettings, 
                   >
                     <span className="text-xs font-bold">{item.label}</span>
                     <span className="text-[10px] text-emerald-400 font-mono mt-0.5">{item.badge}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Format Output Video: 16:9 YouTube Reguler vs 9:16 Shorts */}
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Monitor className="w-4 h-4 text-blue-400" />
+                <span>Format Output Video (Rasio Layar)</span>
+              </span>
+              <span className="font-mono text-xs font-bold text-blue-400 px-2 py-0.5 bg-slate-800 rounded">
+                {(settings.aspectRatio || '16:9') === '16:9' ? '16:9 Landscape' : '9:16 Shorts'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              <strong>16:9 YouTube Reguler</strong>: Menempatkan video short di tengah dengan pilar warna dinamis di kiri-kanan (solusi channel belum monet agar link Shopee di deskripsi/komentar bisa diklik penonton).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              {[
+                {
+                  value: '16:9',
+                  label: '16:9 YouTube Reguler',
+                  desc: 'Center Short + Pilar Warna Dinamis (Link Shopee Aktif)',
+                  badge: 'Rekomendasi (Belum Monet)',
+                  badgeColor: 'text-blue-400'
+                },
+                {
+                  value: '9:16',
+                  label: '9:16 Standar Vertikal',
+                  desc: 'Full Portrait (Shorts / Reels / TikTok)',
+                  badge: 'Khusus Shorts',
+                  badgeColor: 'text-slate-400'
+                }
+              ].map((item) => {
+                const isSelected = (settings.aspectRatio || '16:9') === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, aspectRatio: item.value })}
+                    className={`py-2.5 px-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-blue-500/20 border-blue-500 text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-500/50'
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold">{item.label}</span>
+                      <span className={`text-[10px] font-mono ${item.badgeColor}`}>{item.badge}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-1">{item.desc}</span>
                   </button>
                 );
               })}

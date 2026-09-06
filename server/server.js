@@ -19,6 +19,7 @@ import { generateSrtSubtitles } from './services/subtitleService.js';
 import {
   renderSilentAntiDetectionVideo,
   mergeVoiceoverAndBurnSubtitles,
+  getDynamicPillarColor,
   getMediaDurationSec,
   getVideoDimensions
 } from './services/videoRenderer.js';
@@ -838,6 +839,9 @@ export async function runStage1Pipeline({
     console.log(`[Job ${jobId}] [${payload.progress || 0}%] ${payload.message}`);
   });
 
+  const effectiveAspectRatio = options.aspectRatio || extraJobMeta.aspectRatio || '16:9';
+  const effectivePadColor = options.padColor || extraJobMeta.padColor || getDynamicPillarColor(jobId);
+
   const jobMeta = {
     jobId,
     stage: 'running',
@@ -845,6 +849,8 @@ export async function runStage1Pipeline({
     productDescription: productDescription || '',
     youtubeUrl: youtubeUrl || '',
     shopeeLink: shopeeLink || '',
+    aspectRatio: effectiveAspectRatio,
+    padColor: effectivePadColor,
     createdAt: new Date().toISOString(),
     isOrphan: false,
     ...extraJobMeta,
@@ -1303,18 +1309,23 @@ export async function runStage1Pipeline({
           videoDurationSec: silentDurationSec,
         });
 
+        const is16x9 = effectiveAspectRatio === '16:9';
         updateProgress({
           step: 'render_final',
-          message: 'Rendering video final 9:16 dengan Voiceover & Subtitles...',
+          message: is16x9
+            ? `Rendering video final 16:9 YouTube Reguler (Center Short + Warna Pilar "${effectivePadColor?.name || 'Dinamis'}")...`
+            : 'Rendering video final 9:16 dengan Voiceover & Subtitles...',
           progress: 95,
           status: 'running',
         });
-        await mergeVoiceoverAndBurnSubtitles({
+        const mergeRes = await mergeVoiceoverAndBurnSubtitles({
           silentVideoPath: silentOutputPath,
           voiceoverAudioPath: autoVoiceoverPath,
           srtPath,
           outputVideoPath: finalOutputPath,
           targetDurationSec: silentDurationSec,
+          aspectRatio: effectiveAspectRatio,
+          padColor: effectivePadColor,
           onProgress: updateProgress,
         });
 
@@ -1327,6 +1338,8 @@ export async function runStage1Pipeline({
           jobId,
           stage: 'completed',
           createdAt: jobMeta.createdAt,
+          aspectRatio: mergeRes?.aspectRatio || effectiveAspectRatio,
+          padColor: mergeRes?.padColor || effectivePadColor,
           silentFileName,
           silentVideoUrl: `/api/video/${silentFileName}`,
           silentLocalPath: silentOutputPath,
@@ -1421,6 +1434,8 @@ export async function runStage1Pipeline({
       aiStudioPrompt: scriptData.aiStudioPrompt,
       cleanScript: cleanScriptForTTS(rawVoiceScript),
       caption: scriptData.caption,
+      aspectRatio: effectiveAspectRatio,
+      padColor: effectivePadColor,
       videoTitle: videoMeta.title,
       isOrphan: false,
     };
@@ -1826,12 +1841,24 @@ app.post('/api/upload-voiceover', upload.single('audio'), async (req, res) => {
       videoDurationSec: silentDurationSec,
     });
 
-    updateProgress({ step: 'render_final', message: 'Rendering final 9:16 video with Voiceover & Subtitles...', progress: 60, status: 'running' });
-    await mergeVoiceoverAndBurnSubtitles({
+    const targetAspectRatio = req.body?.aspectRatio || job.aspectRatio || '16:9';
+    const targetPadColor = req.body?.padColor || job.padColor || getDynamicPillarColor(jobId);
+
+    updateProgress({
+      step: 'render_final',
+      message: targetAspectRatio === '16:9'
+        ? `Rendering final 16:9 video (Center Short + Warna Pilar "${targetPadColor?.name || 'Dinamis'}")...`
+        : 'Rendering final 9:16 video with Voiceover & Subtitles...',
+      progress: 60,
+      status: 'running'
+    });
+    const mergeRes = await mergeVoiceoverAndBurnSubtitles({
       silentVideoPath: silentPath, voiceoverAudioPath: audioFile.path,
       srtPath,
       outputVideoPath: finalOutputPath,
       targetDurationSec: silentDurationSec,
+      aspectRatio: targetAspectRatio,
+      padColor: targetPadColor,
       onProgress: updateProgress,
     });
 
@@ -1844,6 +1871,8 @@ app.post('/api/upload-voiceover', upload.single('audio'), async (req, res) => {
     const finalResult = {
       ...job,
       stage: 'completed',
+      aspectRatio: mergeRes?.aspectRatio || targetAspectRatio,
+      padColor: mergeRes?.padColor || targetPadColor,
       finalFileName,
       videoUrl: `/api/video/${finalFileName}?t=${cacheBuster}`,
       downloadUrl: `/api/download/${finalFileName}?t=${cacheBuster}`,
@@ -1941,13 +1970,25 @@ async function processJobVoiceover(jobId, customScript = null) {
       videoDurationSec: silentDurationSec,
     });
 
-    updateProgress({ step: 'render_final', message: 'Rendering video final 9:16 dengan Voiceover & Subtitles...', progress: 75, status: 'running' });
-    await mergeVoiceoverAndBurnSubtitles({
+    const targetAspectRatio = req.body?.aspectRatio || job.aspectRatio || '16:9';
+    const targetPadColor = req.body?.padColor || job.padColor || getDynamicPillarColor(jobId);
+
+    updateProgress({
+      step: 'render_final',
+      message: targetAspectRatio === '16:9'
+        ? `Rendering video final 16:9 YouTube Reguler (Center Short + Warna Pilar "${targetPadColor?.name || 'Dinamis'}")...`
+        : 'Rendering video final 9:16 dengan Voiceover & Subtitles...',
+      progress: 75,
+      status: 'running'
+    });
+    const mergeRes = await mergeVoiceoverAndBurnSubtitles({
       silentVideoPath: silentPath,
       voiceoverAudioPath,
       srtPath,
       outputVideoPath: finalOutputPath,
       targetDurationSec: silentDurationSec,
+      aspectRatio: targetAspectRatio,
+      padColor: targetPadColor,
       onProgress: updateProgress,
     });
 
@@ -1957,6 +1998,8 @@ async function processJobVoiceover(jobId, customScript = null) {
     const updatedJob = {
       ...job,
       stage: 'completed',
+      aspectRatio: mergeRes?.aspectRatio || targetAspectRatio,
+      padColor: mergeRes?.padColor || targetPadColor,
       finalFileName,
       videoUrl: `/api/video/${finalFileName}?t=${cacheBuster}`,
       downloadUrl: `/api/download/${finalFileName}?t=${cacheBuster}`,

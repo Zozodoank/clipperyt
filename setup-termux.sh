@@ -5,6 +5,8 @@ echo "======================================================"
 echo "🎬 Setting up Local AI Affiliate Clipper on Termux"
 echo "======================================================"
 
+git config core.fileMode false 2>/dev/null || true
+
 echo "📦 [1/4] Installing Termux packages..."
 pkg update -y
 pkg install -y nodejs git ffmpeg python
@@ -14,14 +16,14 @@ python -m pip install -U yt-dlp
 
 echo "📦 [3/4] Installing Node.js server dependencies..."
 if [ -f server/package-lock.json ]; then
-  (cd server && npm ci --ignore-scripts)
+  (cd server && npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts)
 else
   (cd server && npm install --ignore-scripts)
 fi
 
 echo "📦 [4/4] Installing Node.js client dependencies..."
 if [ -f client/package-lock.json ]; then
-  (cd client && npm ci)
+  (cd client && npm ci 2>/dev/null || npm install)
 else
   (cd client && npm install)
 fi

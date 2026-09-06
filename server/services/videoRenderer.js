@@ -141,12 +141,75 @@ export async function renderSilentAntiDetectionVideo({
  * @param {Function} [params.onProgress] - Progress callback
  * @returns {Promise<{ finalPath: string }>}
  */
+/**
+ * Curated palette of modern aesthetic background colors for 16:9 side pillars.
+ * Ensures the left and right borders are visually captivating, professional,
+ * and distinct for anti-detection on YouTube.
+ */
+export const DYNAMIC_PILLAR_COLORS = [
+  { name: 'Deep Indigo', hex: '#1E1B4B', ffmpeg: '0x1E1B4B' },
+  { name: 'Midnight Navy', hex: '#0F172A', ffmpeg: '0x0F172A' },
+  { name: 'Dark Slate Teal', hex: '#064E3B', ffmpeg: '0x064E3B' },
+  { name: 'Velvet Crimson', hex: '#4C0519', ffmpeg: '0x4C0519' },
+  { name: 'Royal Purple', hex: '#3B0764', ffmpeg: '0x3B0764' },
+  { name: 'Deep Ocean', hex: '#083344', ffmpeg: '0x083344' },
+  { name: 'Forest Moss', hex: '#14532D', ffmpeg: '0x14532D' },
+  { name: 'Rich Plum', hex: '#3A0840', ffmpeg: '0x3A0840' },
+  { name: 'Charcoal Slate', hex: '#18181B', ffmpeg: '0x18181B' },
+  { name: 'Dark Rose', hex: '#4C0528', ffmpeg: '0x4C0528' },
+  { name: 'Warm Mocha', hex: '#3D1D14', ffmpeg: '0x3D1D14' },
+  { name: 'Deep Emerald', hex: '#022C22', ffmpeg: '0x022C22' },
+  { name: 'Night Denim', hex: '#172554', ffmpeg: '0x172554' },
+  { name: 'Dark Burgundy', hex: '#3F0015', ffmpeg: '0x3F0015' },
+  { name: 'Obsidian Steel', hex: '#0F141C', ffmpeg: '0x0F141C' },
+  { name: 'Dark Violet', hex: '#2E1065', ffmpeg: '0x2E1065' },
+];
+
+/**
+ * Gets a dynamic pillar color from the curated palette.
+ * Uses a seed (e.g. jobId) if provided to ensure consistency within a job,
+ * or selects randomly so every generation is unique.
+ * @param {string|number} [seed]
+ * @returns {{ name: string, hex: string, ffmpeg: string }}
+ */
+export function getDynamicPillarColor(seed = null) {
+  if (seed) {
+    let hash = 0;
+    const str = String(seed);
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const index = Math.abs(hash) % DYNAMIC_PILLAR_COLORS.length;
+    return DYNAMIC_PILLAR_COLORS[index];
+  }
+  const randomIndex = Math.floor(Math.random() * DYNAMIC_PILLAR_COLORS.length);
+  return DYNAMIC_PILLAR_COLORS[randomIndex];
+}
+
+/**
+ * Stage 2: Merges generated voiceover audio with the silent 9:16 video,
+ * trims/loops video if needed to match audio, burns ASS subtitles with animated highlight effect,
+ * and formats to 16:9 Landscape (center short + dynamic aesthetic colored sides) or 9:16 Shorts.
+ * @param {object} params
+ * @param {string} params.silentVideoPath - Input silent video from Stage 1 (1080x1920 with Stage 80% blur)
+ * @param {string} params.voiceoverAudioPath - Generated TTS voiceover .mp3
+ * @param {string} [params.srtPath] - Optional ASS/SRT subtitle file
+ * @param {string} params.outputVideoPath - Target final .mp4 path
+ * @param {number} [params.targetDurationSec] - Target duration in seconds
+ * @param {string} [params.aspectRatio='16:9'] - Target aspect ratio: '16:9' or '9:16'
+ * @param {string|object} [params.padColor] - Dynamic pillar color (hex string or color object)
+ * @param {Function} [params.onProgress] - Progress callback
+ * @returns {Promise<{ finalPath: string, aspectRatio: string, padColor: object }>}
+ */
 export async function mergeVoiceoverAndBurnSubtitles({
   silentVideoPath,
   voiceoverAudioPath,
   srtPath,
   outputVideoPath,
   targetDurationSec,
+  aspectRatio = '16:9',
+  padColor = null,
   onProgress = () => {}
 }) {
   const ffmpegPath = getFFmpegPath();
@@ -168,11 +231,33 @@ export async function mergeVoiceoverAndBurnSubtitles({
     scaleAssSubtitles(srtPath, 1 / atempoFactor, videoDuration);
   }
 
+  const is16x9 = aspectRatio === '16:9';
+  let chosenPillarColor = null;
+  let ffmpegColorCode = '0x1E1B4B';
+
+  if (is16x9) {
+    if (padColor && typeof padColor === 'object' && padColor.ffmpeg) {
+      chosenPillarColor = padColor;
+      ffmpegColorCode = padColor.ffmpeg;
+    } else if (typeof padColor === 'string' && padColor.trim()) {
+      const clean = padColor.trim();
+      ffmpegColorCode = clean.startsWith('#') ? `0x${clean.slice(1)}` : clean;
+      chosenPillarColor = {
+        name: 'Custom',
+        hex: clean.startsWith('#') ? clean : `#${clean.replace(/^0x/, '')}`,
+        ffmpeg: ffmpegColorCode
+      };
+    } else {
+      chosenPillarColor = getDynamicPillarColor();
+      ffmpegColorCode = chosenPillarColor.ffmpeg;
+    }
+  }
+
   onProgress({
     step: 'merge_final',
-    message: srtPath
-      ? 'Burning dual-color animated subtitles & merging Voiceover AI...'
-      : 'Merging Voiceover AI into final video...',
+    message: is16x9
+      ? `Merender video 16:9 YouTube Reguler (Center Short + Warna Pilar "${chosenPillarColor?.name || 'Dinamis'}" [${chosenPillarColor?.hex}])...`
+      : (srtPath ? 'Burning dual-color animated subtitles & merging Voiceover AI...' : 'Merging Voiceover AI into final video...'),
     progress: 92
   });
 
@@ -180,7 +265,9 @@ export async function mergeVoiceoverAndBurnSubtitles({
     let filterChains = [];
     let mapArgs = [];
 
-    // Subtitle burning filter
+    // Video filter chain: Subtitles first (burned onto 1080x1920), then scale & pad if 16:9
+    const videoFilters = [];
+
     if (srtPath && fs.existsSync(srtPath)) {
       const sanitizedSrtPath = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
       const isAss = sanitizedSrtPath.endsWith('.ass');
@@ -188,8 +275,18 @@ export async function mergeVoiceoverAndBurnSubtitles({
       const subFilter = isAss
         ? `ass='${sanitizedSrtPath}'`
         : `subtitles='${sanitizedSrtPath}':force_style='Fontname=Arial,Fontsize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=3,Shadow=1.5,MarginV=120,Alignment=2,Bold=1'`;
-      filterChains.push(`[0:v]${subFilter}[vsub]`);
-      mapArgs.push('-map', '[vsub]');
+      videoFilters.push(subFilter);
+    }
+
+    if (is16x9) {
+      // Scale short video to height 1080 (width becomes 608) and pad left/right to 1920x1080 with dynamic color
+      videoFilters.push('scale=-2:1080:flags=lanczos');
+      videoFilters.push(`pad=1920:1080:(1920-iw)/2:0:color=${ffmpegColorCode}`);
+    }
+
+    if (videoFilters.length > 0) {
+      filterChains.push(`[0:v]${videoFilters.join(',')}[vout]`);
+      mapArgs.push('-map', '[vout]');
     } else {
       mapArgs.push('-map', '0:v');
     }
@@ -220,16 +317,25 @@ export async function mergeVoiceoverAndBurnSubtitles({
       outputVideoPath
     ];
 
+    console.log(`[VideoRenderer Final] Spawning FFmpeg:\n${ffmpegPath} ${args.join(' ')}`);
     const proc = spawn(ffmpegPath, args);
     let stderr = '';
     proc.stderr.on('data', d => stderr += d.toString());
     proc.on('close', code => {
       if (code === 0 && fs.existsSync(outputVideoPath)) {
         onProgress({ step: 'merge_final', message: 'Final video rendered successfully!', progress: 100 });
-        resolve({ finalPath: outputVideoPath });
+        resolve({
+          finalPath: outputVideoPath,
+          aspectRatio: is16x9 ? '16:9' : '9:16',
+          padColor: chosenPillarColor
+        });
       } else {
+        console.error(`[VideoRenderer Final] Error:\n${stderr}`);
         reject(new Error(`Final merge failed: ${stderr.slice(-300)}`));
       }
+    });
+    proc.on('error', (err) => {
+      reject(new Error(`Failed to spawn FFmpeg for final merge: ${err.message}`));
     });
   });
 }

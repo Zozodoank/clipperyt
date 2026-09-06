@@ -145,8 +145,12 @@ export default function InputCard({
             <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono text-emerald-300 font-bold">
               Framing: {(settings.renderMode || 'stage_80') === 'stage_80' ? 'Stage 80% (Blur)' : (settings.renderMode || 'stage_80') === 'fit_canvas' ? 'Fit 16:9' : (settings.renderMode || 'stage_80') === 'vertical_crop' ? 'Full 9:16' : 'Stage 1:1'}
             </span>
-            <span className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 font-mono text-slate-300">
-              9:16 (1080x1920)
+            <span className={`px-2 py-0.5 rounded border font-mono font-bold ${
+              (settings.aspectRatio || '16:9') === '16:9'
+                ? 'bg-blue-500/15 border-blue-500/30 text-blue-300'
+                : 'bg-slate-800/80 border-slate-700/60 text-slate-300'
+            }`}>
+              {(settings.aspectRatio || '16:9') === '16:9' ? '16:9 Reguler (Link Shopee Aktif)' : '9:16 Shorts'}
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 font-mono text-slate-300">
               Speed: {settings.speedMultiplier}x
