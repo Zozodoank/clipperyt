@@ -1322,6 +1322,7 @@ export async function runStage1Pipeline({
         generateSrtSubtitles(scriptForSubtitles, subtitleTargetDuration, srtPath, {
           wordBoundaries: ttsResult.wordBoundaries,
           videoDurationSec: silentDurationSec,
+          lexicon: scriptData.lexicon_to_replace || {},
         });
 
         const is16x9 = effectiveAspectRatio === '16:9';
@@ -1856,6 +1857,7 @@ app.post('/api/upload-voiceover', upload.single('audio'), async (req, res) => {
     generateSrtSubtitles(scriptToUse, subtitleTargetDuration, srtPath, {
       wordBoundaries: job?.wordBoundaries || [],
       videoDurationSec: silentDurationSec,
+      lexicon: job?.lexicon || {},
     });
 
     const targetAspectRatio = req.body?.aspectRatio || job.aspectRatio || '16:9';
@@ -1991,6 +1993,7 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
     generateSrtSubtitles(scriptToUse, subtitleTargetDuration, srtPath, {
       wordBoundaries: ttsResult.wordBoundaries,
       videoDurationSec: silentDurationSec,
+      lexicon: effectiveLexicon,
     });
 
     const targetAspectRatio = options.aspectRatio || job.aspectRatio || '16:9';
