@@ -2010,7 +2010,7 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
   }
 
   if (!scriptToUse && job.productTitle) {
-    scriptToUse = `Kenalin, ${job.productTitle}! Solusi paling praktis buat kamu. Cek produk di bawah sekarang sebelum kehabisan!`;
+    scriptToUse = `Kenalin, ${job.productTitle}! Solusi paling praktis buat kamu. Cek link pembelian di deskripsi sekarang sebelum kehabisan!`;
   }
 
   if (!scriptToUse) {

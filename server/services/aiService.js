@@ -1002,11 +1002,16 @@ CRITICAL 4-BEAT SHOPEE FYP FORMULA:
    - Describe the satisfying visual proof seen in the video frames: rich foam (busa melimpah), cleaning hard-to-reach crevices (menjangkau sela-sela), smooth effortless cutting, hands protected from scratches/cuts (tangan aman gak lecet).
    - Satisfying demonstrations keep viewers glued to the screen (high completion watch-time).
 
-4. BEAT 4: PRICE PSYCHOLOGY & SHOPEE KERANJANG POJOK KIRI BAWAH CTA (00:17 - ${formatSeconds(targetDuration)})
+4. BEAT 4: PRICE PSYCHOLOGY & CALL TO ACTION (CTA) LINK DI DESKRIPSI (00:17 - ${formatSeconds(targetDuration)})
    - Voiceover MUST state the price appeal: "Harganya murah meriah..." or "Harganya murah meriah banget, gak bikin kantong jebol!"
-   - Direct viewers with urgent FOMO to the Shopee Keranjang Kuning at the bottom-left corner:
-     "Buruan cek keranjang pojok kiri bawah sebelum kehabisan!" or "Langsung checkout di keranjang pojok kiri bawah mumpung lagi promo!"
-   - The Shopee algorithm prioritizes clicks on the yellow shopping bag icon at the bottom-left. Calling out "keranjang pojok kiri bawah" is essential for conversion!
+   - Direct viewers to the purchase link in the video description (link aktif/berwarna biru di deskripsi video YouTube):
+     Variasi ajakan CTA yang disarankan (singkat, to-the-point, dan meyakinkan):
+     * "Link pembelian ada di deskripsi ya!"
+     * "Cek produk di deskripsi sekarang sebelum kehabisan!"
+     * "Langsung klik link pembelian di deskripsi mumpung lagi promo!"
+     * "Cek link produk di deskripsi video!"
+     * "Buruan cek produk di deskripsi!"
+   - DILARANG mengarahkan ke keranjang kuning atau link di bio. Penonton diarahkan untuk membuka deskripsi video karena link pembelian ada di deskripsi.
 
 CRITICAL DURATION & WORD-COUNT TIMING RULES:
 - The final video duration is EXACTLY ${targetDuration} seconds (${sceneCount} fast scenes of ~${effectiveSceneSec.toFixed(1)}s each).
@@ -1039,22 +1044,22 @@ CRITICAL DURATION & WORD-COUNT TIMING RULES:
      * [soft] for empathetic problem statements.
      * [pause] for natural human breathing pauses between sentences.
    - Each line MUST start with an exact timestamp corresponding to each scene (e.g. [00:00], [00:03], [00:07], up to the closing CTA), followed by the emotion tag and spoken line.
-   - Closing line MUST have the price appeal ("murah meriah") and direct CTA to "keranjang pojok kiri bawah".
+   - Closing line MUST have the price appeal ("murah meriah") and direct CTA to link pembelian di deskripsi (misal: "Link pembelian ada di deskripsi ya!", "Cek produk di deskripsi sekarang sebelum kehabisan!", atau "Langsung klik link pembelian di deskripsi mumpung promo!").
 
 STRICT RULES FOR VOICE OVER:
 - NEVER mention unboxing, packaging, bubble wrap, or cardboard. Focus 100% on product action and problem-solving.
 - Write in natural, engaging conversational Indonesian.
 - DILARANG KERAS menggunakan kata "kece" dan "kangen".
 - HINDARI KATA SLANG "ng" (nggak, ngasih, ngeliat, dll) - gunakan kata baku.
-- DILARANG menyebut nama medsos lain (TikTok, Instagram, YouTube, Facebook, dll).
-- DILARANG mengatakan "link di bio" - WAJIB gunakan "keranjang pojok kiri bawah" atau "produk di bawah".
+- DILARANG menyebut nama medsos lain (TikTok, Instagram, Facebook, dll).
+- DILARANG mengatakan "link di bio" atau "keranjang kuning" / "keranjang pojok kiri bawah" - WAJIB gunakan ajakan ke link pembelian di deskripsi (misal: "link pembelian di deskripsi", "cek produk di deskripsi", "klik link pembelian di deskripsi").
 - Ejaan baku tanpa aksen é/è.
 
 4. 'aiStudioPrompt':
    - Plain text block formatted for Google AI Studio TTS Playground (Scene, Sample Context, Speaker 1 with timestamps and emotion tags).
 
 5. 'caption':
-   - Caption with emojis, Problem-Solution hook, benefits, CTA ("Cek keranjang pojok kiri bawah!"), and hashtags (#racunshopee, #spillracun, #racunbelanja, #shopeevideo, #fyp).
+   - Caption with emojis, Problem-Solution hook, benefits, CTA link pembelian di deskripsi ("Link pembelian ada di deskripsi ya!" / "Cek produk di deskripsi!"), and relevant hashtags (#racunbelanja, #spillracun, #youtubeshorts, #affiliateindonesia).
    - NO URLs/links, NO Chinese characters.
 
 6. 'lexicon_to_replace' (Deteksi Istilah / Kata Bahasa Inggris Otomatis):
@@ -1085,8 +1090,14 @@ PENTING - ATURAN DURASI, TIMESTAMP & TEMPO NASKAH:
 6. DILARANG KERAS menggunakan kata "kangen" dan HINDARI kata gaul berawalan "ng" (seperti: nggak, ngasih, ngeliat, ngerasain, ngapain, dll). Gunakan bahasa Indonesia baku (tidak, memberi, melihat, dll).
 7. KATA "keju" DAN "beres" WAJIB DITULIS PERSIS: "keju" dan "beres" (keju=keju, beres=beres) tanpa tanda kecil atau aksen di atas huruf e.
 8. DILARANG KERAS menyebutkan nama platform media sosial atau marketplace apa pun (seperti Shopee, TikTok, Instagram, YouTube, Facebook, Reels, medsos, dll) di naskah voiceover maupun Kotak Scene!
-9. JANGAN PERNAH gunakan kata "link di bio" di dalam naskah voiceover. Selalu gunakan ajakan seperti "Cek produk di bawah sekarang", "Klik produk di bawah", atau "Checkout produk di bawah sebelum kehabisan".
-10. PADA BAGIAN 'CAPTION': DILARANG KERAS menuliskan link Shopee, URL, tautan web apa pun, karakter China/Mandarin (seperti 朋友们), dan ajakan cek komentar pertama! Cukup sertakan hook, deskripsi manfaat, CTA di bio (misal: 'Cek produk di bio ya!'), dan hashtag viral.
+9. PADA CALL TO ACTION (CTA): WAJIB arahkan penonton ke link pembelian di deskripsi video! Selalu gunakan variasi ajakan seperti:
+   - "Link pembelian ada di deskripsi ya!"
+   - "Cek produk di deskripsi sekarang sebelum kehabisan!"
+   - "Klik link pembelian di deskripsi mumpung lagi promo!"
+   - "Cek link di deskripsi video sekarang!"
+   - "Buruan cek produk di deskripsi ya!"
+   DILARANG KERAS menggunakan kata "link di bio", "keranjang kuning", atau "keranjang pojok kiri bawah".
+10. PADA BAGIAN 'CAPTION': DILARANG KERAS menuliskan link Shopee, URL, tautan web apa pun, karakter China/Mandarin (seperti 朋友们), dan ajakan cek komentar pertama! Cukup sertakan hook, deskripsi manfaat, CTA di deskripsi (misal: '🛒 Link pembelian produk ada di deskripsi ya!'), dan hashtag viral.
 11. Gunakan ejaan bahasa Indonesia baku yang wajar (misal: keren, elegan, praktis, keju, beres) tanpa menambahkan tanda aksen é atau è.
 12. WAJIB 100% Bahasa Indonesia: DILARANG KERAS menyertakan tulisan/karakter China (Mandarin/Hanzi) di seluruh output (naskah, visual, scene, caption, prompt).
 
@@ -1109,9 +1120,9 @@ Return strict JSON in this format:
       "adAdvisorNotes": "Tips sutradara (SFX / Text Overlay)"
     }
   ],
-  "voiceoverScript": "[00:00] Masih repot marut keju pakai alat lama?\\n[00:05] Kenalin parutan serbaguna ini...\\n[00:30] Cek produk di bawah sekarang!",
-  "aiStudioPrompt": "Scene\\nStudio dapur modern...\\n\\nSample Context\\nDurasi voice over 30 detik. Iklan affiliate viral...\\n\\nSpeaker 1\\n[00:00] [intrigue] Masih repot...\\n[00:05] [excited] Kenalin...\\n[00:30] [excited] Cek produk di bawah sekarang!",
-  "caption": "Teks caption lengkap dengan hook, manfaat, ajakan cek bio, dan hashtag viral...",
+  "voiceoverScript": "[00:00] Masih repot marut keju pakai alat lama?\\n[00:05] Kenalin parutan serbaguna ini...\\n[00:30] Cek produk di deskripsi sekarang sebelum kehabisan!",
+  "aiStudioPrompt": "Scene\\nStudio dapur modern...\\n\\nSample Context\\nDurasi voice over 30 detik. Iklan affiliate viral...\\n\\nSpeaker 1\\n[00:00] [intrigue] Masih repot...\\n[00:05] [excited] Kenalin...\\n[00:30] [excited] Link pembelian ada di deskripsi ya!",
+  "caption": "Teks caption lengkap dengan hook, manfaat, ajakan cek link pembelian di deskripsi, dan hashtag viral...",
   "lexicon_to_replace": {
     "istilah_inggris": "pelafalan_fonetik_indonesia"
   }
@@ -1235,7 +1246,7 @@ Return strict JSON in this format:
 [00:11] [emphasis] Menjangkau sela-sela sempit bersih tuntas tanpa baret.
 [00:15] [soft] Bahannya super lembut, awet dipakai berkali-kali.
 [00:18] [excited] Harganya murah meriah banget, ramah di kantong!
-[00:21] [excited] Cek keranjang pojok kiri bawah sekarang juga!`;
+[00:21] [excited] Link pembelian ada di deskripsi sekarang juga!`;
   }
 
   let caption = (parsed.caption || '').trim();
@@ -1256,13 +1267,13 @@ Return strict JSON in this format:
     .trim();
 
   if (!caption) {
-    caption = `🔥 Racun Belanja Viral: ${effectiveTitle}!\n\n${effectiveDesc ? effectiveDesc + '\n\n' : ''}Buruan checkout sekarang mumpung lagi diskon spesial!\n\n🛒 Cek produk di bio sekarang ya!\n\n#racunbelanja #racuntiktok #reelsviral #affiliateindonesia #spillracun`;
+    caption = `🔥 Racun Belanja Viral: ${effectiveTitle}!\n\n${effectiveDesc ? effectiveDesc + '\n\n' : ''}Buruan checkout sekarang mumpung lagi diskon spesial!\n\n🛒 Link pembelian & info produk ada di deskripsi video ya!\n\n#racunbelanja #youtubeshorts #affiliateindonesia #spillracun`;
   }
 
   let aiStudioPrompt = (parsed.aiStudioPrompt || '').trim();
   const fallbackLastSec = Math.max(0, targetDuration - 5);
   if (!aiStudioPrompt) {
-    aiStudioPrompt = `Scene\nStudio rekaman energik dengan presenter Indonesia yang antusias dan percaya diri.\n\nSample Context\nDurasi voice over ${fallbackLastSec} detik. Iklan affiliate viral. Dimulai dengan hook yang mengejutkan, membangun ke demonstrasi manfaat produk, diakhiri CTA yang meyakinkan. Nada suara hangat, antusias, dan persuasif.\n\nSpeaker 1 - Orus\n[intrigue] Stop scroll dulu! [desire] ${effectiveTitle} yang satu ini beneran wajib kamu punya! [information] ${effectiveDesc ? effectiveDesc.slice(0, 120) + '.' : 'Produk ini hadir dengan kualitas premium dan desain yang praktis untuk kebutuhan sehari-hari.'} [excited] Udah ribuan orang pake dan reviewnya bagus semua! [inspiration] Kualitasnya terbukti awet dan terpercaya untuk jangka panjang. [confident] Buruan cek produk di bawah sekarang sebelum kehabisan!`;
+    aiStudioPrompt = `Scene\nStudio rekaman energik dengan presenter Indonesia yang antusias dan percaya diri.\n\nSample Context\nDurasi voice over ${fallbackLastSec} detik. Iklan affiliate viral. Dimulai dengan hook yang mengejutkan, membangun ke demonstrasi manfaat produk, diakhiri CTA yang meyakinkan. Nada suara hangat, antusias, dan persuasif.\n\nSpeaker 1 - Orus\n[intrigue] Stop scroll dulu! [desire] ${effectiveTitle} yang satu ini beneran wajib kamu punya! [information] ${effectiveDesc ? effectiveDesc.slice(0, 120) + '.' : 'Produk ini hadir dengan kualitas premium dan desain yang praktis untuk kebutuhan sehari-hari.'} [excited] Udah ribuan orang pake dan reviewnya bagus semua! [inspiration] Kualitasnya terbukti awet dan terpercaya untuk jangka panjang. [confident] Buruan cek link pembelian di deskripsi sebelum kehabisan!`;
   } else {
     // Normalize aiStudioPrompt duration in Sample Context based on the last speaker 1 timestamp
     const timestampMatches = [...aiStudioPrompt.matchAll(/\[(\d{1,2}):(\d{2})\]/g)];
@@ -1662,14 +1673,14 @@ function buildFallbackScenes(productName, segmentDuration, sceneDuration = 3.3) 
       adAdvisorNotes: 'Teks harga promo mencolok, SFX kaching / coin.'
     },
     {
-      visualDescription: `Hero shot penutup dengan animasi panah ke keranjang kuning pojok kiri bawah.`,
-      voiceover: `Buruan cek keranjang pojok kiri bawah sekarang sebelum kehabisan!`,
-      adAdvisorNotes: 'Grafis panah berkedip ke pojok kiri bawah, CTA mendesak.'
+      visualDescription: `Hero shot penutup dengan animasi teks ajakan cek deskripsi video.`,
+      voiceover: `Buruan cek link pembelian di deskripsi sekarang sebelum kehabisan!`,
+      adAdvisorNotes: 'Teks link pembelian di deskripsi, CTA mendesak.'
     },
     {
-      visualDescription: `Stiker diskon dan keranjang kuning berkedip.`,
-      voiceover: `Langsung checkout di keranjang pojok kiri bawah mumpung masih promo!`,
-      adAdvisorNotes: 'Teks urgensi terakhir, SFX click.'
+      visualDescription: `Stiker promo diskon dan teks link di deskripsi berkedip.`,
+      voiceover: `Langsung klik link pembelian di deskripsi mumpung masih promo!`,
+      adAdvisorNotes: 'Teks urgensi link di deskripsi, SFX click.'
     },
   ];
 

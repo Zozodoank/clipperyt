@@ -248,8 +248,8 @@ function colorizeShopeeSubtitle(text, index = 0) {
   const yellow = '{\\c&H0000FFFF&}';
   const white = '{\\c&H00FFFFFF&}';
 
-  // Keyword patterns for high-converting Shopee Affiliate narration
-  const viralKeywordsPattern = /\b(fix|kurang maksimal|kain biasa|alat biasa|masalah|rusak|gagal|capek|ribet|baret|lecet|kotor|solusi|sarung tangan|cendol|busa|melimpah|praktis|serbaguna|bersih|kinclong|tuntas|mudah|cepat|lembut|kokoh|awet|rapi|ampuh|otomatis|murah meriah|murah|diskon|promo|hemat|worth it|terjangkau|keranjang|pojok kiri bawah|keranjang kuning|sekarang|buruan|cek|klik|checkout|sebelum kehabisan)\b/gi;
+  // Keyword patterns for high-converting Affiliate narration (including CTA link di deskripsi)
+  const viralKeywordsPattern = /\b(fix|kurang maksimal|kain biasa|alat biasa|masalah|rusak|gagal|capek|ribet|baret|lecet|kotor|solusi|sarung tangan|cendol|busa|melimpah|praktis|serbaguna|bersih|kinclong|tuntas|mudah|cepat|lembut|kokoh|awet|rapi|ampuh|otomatis|murah meriah|murah|diskon|promo|hemat|worth it|terjangkau|link pembelian|pembelian|deskripsi|cek produk|cek link|keranjang|pojok kiri bawah|keranjang kuning|sekarang|buruan|cek|klik|checkout|sebelum kehabisan)\b/gi;
 
   if (viralKeywordsPattern.test(clean)) {
     // Reset regex index

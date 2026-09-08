@@ -150,7 +150,7 @@ export default function CaptionCard({ result }) {
   const getSceneBeatBadge = (sceneNum, totalScenes) => {
     if (sceneNum === 1) return { label: '🔥 Hook Masalah (0-3s)', color: 'bg-red-500/20 text-red-300 border-red-500/30' };
     if (sceneNum === 2) return { label: '💡 Hero Solution', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' };
-    if (sceneNum === totalScenes) return { label: '🛒 CTA Keranjang Bawah', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    if (sceneNum === totalScenes) return { label: '🔗 CTA Link Deskripsi', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
     if (sceneNum === totalScenes - 1) return { label: '💰 Psikologi Harga', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
     return { label: '✨ Satisfying Demo', color: 'bg-sky-500/20 text-sky-300 border-sky-500/30' };
   };
@@ -219,7 +219,7 @@ export default function CaptionCard({ result }) {
             }`}
           >
             <Tag className="w-3.5 h-3.5" />
-            <span>Reels Caption</span>
+            <span>Deskripsi &amp; Caption</span>
           </button>
         </div>
 
@@ -320,14 +320,14 @@ export default function CaptionCard({ result }) {
         {activeTab === 'script' && (
           <div className="relative flex-1 flex flex-col">
             <div className="mb-2 text-[11px] text-slate-400 flex items-center gap-1 flex-wrap">
-              <span>Formula Shopee FYP:</span>
+              <span>Formula Affiliate FYP:</span>
               <span className="text-amber-300 font-bold">[HOOK MASALAH 0-3s]</span>
               <span>→</span>
               <span className="text-indigo-300 font-bold">[HERO SOLUTION]</span>
               <span>→</span>
               <span className="text-sky-300 font-bold">[DEMO SATISFYING]</span>
               <span>→</span>
-              <span className="text-emerald-300 font-bold">[HARGA &amp; CTA KERANJANG]</span>
+              <span className="text-emerald-300 font-bold">[HARGA &amp; CTA DESKRIPSI]</span>
             </div>
             <textarea
               readOnly
