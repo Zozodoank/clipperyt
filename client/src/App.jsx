@@ -119,6 +119,7 @@ export default function App() {
           error: data.error || null,
           isQuotaError: data.isQuotaError || false,
           canRetry: data.canRetry || false,
+          coreProductNoun: data.coreProductNoun || prev.coreProductNoun,
         }));
         if ((data.status === 'awaiting_voiceover' || data.status === 'completed') && data.result) {
           setResult(data.result);
@@ -380,6 +381,7 @@ export default function App() {
           error: data.error || null,
           isQuotaError: data.isQuotaError || false,
           canRetry: data.canRetry || false,
+          coreProductNoun: data.coreProductNoun || prev.coreProductNoun,
         }));
 
         if ((data.status === 'awaiting_voiceover' || data.status === 'completed') && data.result) {

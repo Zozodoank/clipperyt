@@ -57,7 +57,8 @@ import {
   discoverYouTubeCandidatesForProduct,
   findMatchingShopeeProductUrl,
   DEFAULT_AUTO_KEYWORDS,
-  getAutoKeywords
+  getAutoKeywords,
+  extractCoreProductInfo
 } from './services/discoveryService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -373,6 +374,14 @@ function sanitizeCaptionText(caption = '') {
 }
 const stripShopeeLinkFromCaption = sanitizeCaptionText;
 
+// Product Core Noun Extractor (Policy 1 & Policy 4)
+app.all('/api/extract-product', (req, res) => {
+  const title = req.query.title || req.body?.title || '';
+  const description = req.query.description || req.body?.description || '';
+  const info = extractCoreProductInfo(title, description);
+  res.json({ success: true, ...info });
+});
+
 // 2. Get all jobs history
 app.get('/api/jobs', (req, res) => {
   const jobs = [];
@@ -384,6 +393,8 @@ app.get('/api/jobs', (req, res) => {
       jobId,
       stage: job.stage || 'unknown',
       productTitle: job.productTitle || '',
+      cleanProductTitle: job.cleanProductTitle || job.productTitle || '',
+      coreProductNoun: job.coreProductNoun || (job.productTitle ? extractCoreProductInfo(job.productTitle, job.productDescription).coreProductNoun : ''),
       productDescription: job.productDescription || '',
       youtubeUrl: job.youtubeUrl || '',
       shopeeLink: job.shopeeLink || '',
@@ -480,7 +491,8 @@ app.post('/api/jobs/:jobId/retry', async (req, res) => {
       if (oldVid) usedVids.add(oldVid);
 
       if (forceNewCandidate && job.productTitle) {
-        updateJobProgress(jobId, { step: 'auto_youtube_search', message: `Mencari video 1080p baru untuk "${job.productTitle.slice(0, 30)}..."`, progress: 8, status: 'running' });
+        const targetNoun = job.coreProductNoun || extractCoreProductInfo(job.productTitle, job.productDescription).coreProductNoun;
+        updateJobProgress(jobId, { step: 'auto_youtube_search', message: `Mencari video 1080p baru untuk target "${targetNoun}"...`, progress: 8, status: 'running', coreProductNoun: targetNoun });
         const fresh = await discoverYouTubeCandidatesForProduct({
           productTitle: job.productTitle,
           productDescription: job.productDescription,
@@ -897,10 +909,17 @@ export async function runStage1Pipeline({
   const effectiveAspectRatio = options.aspectRatio || extraJobMeta.aspectRatio || '16:9';
   const effectivePadColor = options.padColor || extraJobMeta.padColor || getDynamicPillarColor(jobId);
 
+  const productInfo = extractCoreProductInfo(productTitle, productDescription);
+  const coreProductNoun = productInfo.coreProductNoun || productTitle || 'Produk Praktis';
+  const cleanProductTitle = productInfo.cleanTitle || productTitle || '';
+
   const jobMeta = {
     jobId,
     stage: 'running',
     productTitle: productTitle || '',
+    cleanProductTitle,
+    coreProductNoun,
+    productCategory: productInfo.category || 'general_gadget',
     productDescription: productDescription || '',
     youtubeUrl: youtubeUrl || '',
     shopeeLink: shopeeLink || '',
@@ -915,9 +934,10 @@ export async function runStage1Pipeline({
 
   updateProgress({
     step: 'start',
-    message: 'Starting Stage 1: Video Clipping & AI Scripting Pipeline...',
+    message: `Menyiapkan pembuatan video affiliate untuk "${coreProductNoun}"...`,
     progress: 5,
-    status: 'running'
+    status: 'running',
+    coreProductNoun,
   });
 
   try {
@@ -1197,9 +1217,10 @@ export async function runStage1Pipeline({
       const engineName = aiProvider === 'gemini' ? 'Google Gemini Direct' : 'AI';
       updateProgress({
         step: 'auto_search_fallback',
-        message: `⛔ Video awal ditolak AI (${lastRejectionError?.rejectionReason || 'tidak cocok'}). ${engineName} mencari video YouTube baru untuk "${productTitle.slice(0, 30)}..."`,
+        message: `⛔ Video awal ditolak AI (${lastRejectionError?.rejectionReason || 'tidak cocok'}). ${engineName} mencari video YouTube baru untuk target "${coreProductNoun}"...`,
         progress: 15,
         status: 'running',
+        coreProductNoun,
       });
 
       console.log(`[Job ${jobId}] Memulai pencarian kandidat YouTube baru untuk "${productTitle}" karena video awal ditolak...`);
