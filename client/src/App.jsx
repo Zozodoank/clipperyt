@@ -23,13 +23,17 @@ export default function App() {
 
   const [settings, setSettings] = useState({
     aiProvider: 'gemini',
+    ttsProvider: 'gemini_tts',
+    ttsModel: 'gemini-2.5-flash-preview-tts',
+    ttsFallbackModel: 'gemini-3.1-flash-tts-preview',
+    ttsVoice: 'Aoede',
     sceneDuration: 3.3,
     renderMode: 'stage_80',
     aspectRatio: '16:9',
     hflip: false,
     speedMultiplier: 1,
     enableSubtitles: true,
-    voice: 'alloy',
+    voice: 'Aoede',
   });
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -57,12 +61,16 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setEngineStatus(data);
-        if (data.activeAiEngine && data.activeAiEngine !== 'none') {
-          setSettings((prev) => ({
-            ...prev,
-            aiProvider: prev.aiProvider || data.activeAiEngine,
-          }));
-        }
+        setSettings((prev) => ({
+          ...prev,
+          ...(data.activeAiEngine && data.activeAiEngine !== 'none' ? { aiProvider: prev.aiProvider || data.activeAiEngine } : {}),
+          ...(data.tts ? {
+            ttsProvider: prev.ttsProvider || data.tts.provider || 'gemini_tts',
+            ttsModel: prev.ttsModel || data.tts.model || 'gemini-2.5-flash-preview-tts',
+            ttsFallbackModel: prev.ttsFallbackModel || data.tts.fallbackModel || 'gemini-3.1-flash-tts-preview',
+            ttsVoice: prev.ttsVoice || data.tts.voice || 'Aoede',
+          } : {})
+        }));
       }
     } catch (err) {
       console.warn('Could not fetch backend health:', err.message);
@@ -444,6 +452,7 @@ export default function App() {
               onRetryJob={handleRetryJob}
               currentJobId={lastJobIdRef.current}
               refreshSignal={historyRefreshSignal}
+              settings={settings}
             />
 
             <InputCard
@@ -470,6 +479,7 @@ export default function App() {
                 <VoiceoverUploader
                   jobId={result.jobId}
                   result={result}
+                  settings={settings}
                   voiceoverScript={result.voiceoverScript}
                   aiStudioPrompt={result.aiStudioPrompt}
                   onUploadSuccess={handleVoiceoverUploadSuccess}

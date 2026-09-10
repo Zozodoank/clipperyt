@@ -26,7 +26,14 @@ import {
   getMediaDurationSec,
   getVideoDimensions
 } from './services/videoRenderer.js';
-import { generateVoiceoverTTS, cleanScriptForTTS } from './services/ttsService.js';
+import {
+  generateVoiceoverTTS,
+  cleanScriptForTTS,
+  GEMINI_TTS_VOICES,
+  DEFAULT_GEMINI_TTS_MODEL,
+  DEFAULT_GEMINI_TTS_FALLBACK_MODEL,
+  DEFAULT_GEMINI_TTS_VOICE
+} from './services/ttsService.js';
 import { loadEnglishDictionary, saveToEnglishDictionary } from './services/dictionaryService.js';
 import {
   fetchVideoMetadataAndStream,
@@ -331,9 +338,14 @@ app.get('/api/health', async (req, res) => {
     defaultAiProvider: activeAiEngine !== 'none' ? activeAiEngine : 'openrouter',
     tts: {
       available: true,
-      defaultVoice: 'Gadis (Edge-TTS Neural)',
-      provider: process.env.TTS_PROVIDER || 'edge_tts',
-      voiceName: process.env.TTS_VOICE || 'id-ID-GadisNeural',
+      provider: process.env.TTS_PROVIDER || 'gemini_tts',
+      model: process.env.GEMINI_TTS_MODEL || DEFAULT_GEMINI_TTS_MODEL,
+      fallbackModel: process.env.GEMINI_TTS_FALLBACK_MODEL || DEFAULT_GEMINI_TTS_FALLBACK_MODEL,
+      voice: process.env.GEMINI_TTS_VOICE || DEFAULT_GEMINI_TTS_VOICE,
+      voices: GEMINI_TTS_VOICES,
+      defaultVoice: (process.env.TTS_PROVIDER || 'gemini_tts') === 'gemini_tts' ? 'Aoede (Gemini Flash)' : 'Gadis (Edge-TTS Neural)',
+      voiceName: process.env.GEMINI_TTS_VOICE || DEFAULT_GEMINI_TTS_VOICE,
+      geminiConfigured: geminiKeySet,
       edgeTtsConfigured: true,
       fishAudioConfigured: Boolean(process.env.FISH_AUDIO_API_KEY && !process.env.FISH_AUDIO_API_KEY.startsWith('your_')),
     },
@@ -388,7 +400,10 @@ app.get('/api/jobs', (req, res) => {
       voiceoverScript: job.voiceoverScript || '',
       aiStudioPrompt: job.aiStudioPrompt || '',
       cleanScript: job.cleanScript || '',
-      ttsVoice: job.ttsVoice || 'Gadis Indonesia (Neural)',
+      ttsVoice: job.ttsVoice || (job.ttsProvider === 'edge_tts' ? 'Gadis Indonesia (Neural)' : 'Aoede'),
+      ttsProvider: job.ttsProvider || 'gemini_tts',
+      ttsModel: job.ttsModel || 'gemini-2.5-flash-preview-tts',
+      ttsFallbackModel: job.ttsFallbackModel || 'gemini-3.1-flash-tts-preview',
       voiceoverAudioUrl: job.voiceoverAudioUrl || null,
       sampleContext: job.sampleContext || null,
       caption: stripShopeeLinkFromCaption(job.caption || ''),
@@ -1414,9 +1429,18 @@ export async function runStage1Pipeline({
     const autoVoiceoverPath = path.join(uploadsDir, voiceoverFileName);
     const silentDurationSec = (await getMediaDurationSec(silentOutputPath)) || highlight.duration || 20;
 
+    const activeTtsProvider = (options.ttsProvider || process.env.TTS_PROVIDER || 'gemini_tts').toLowerCase().trim();
+    const isGeminiTts = activeTtsProvider === 'gemini_tts';
+    const ttsModelToUse = options.ttsModel || process.env.GEMINI_TTS_MODEL || DEFAULT_GEMINI_TTS_MODEL;
+    const ttsFallbackModelToUse = options.ttsFallbackModel || process.env.GEMINI_TTS_FALLBACK_MODEL || DEFAULT_GEMINI_TTS_FALLBACK_MODEL;
+    const ttsVoiceToUse = options.ttsVoice || process.env.GEMINI_TTS_VOICE || DEFAULT_GEMINI_TTS_VOICE;
+    const ttsLabel = isGeminiTts
+      ? `Gemini Flash (${ttsModelToUse} - ${ttsVoiceToUse})`
+      : 'Edge-TTS Gadis';
+
     updateProgress({
       step: 'tts_generating',
-      message: '🎙️ Menghasilkan voice over Gadis (Edge-TTS Neural)...',
+      message: `🎙️ Menghasilkan voice over ${ttsLabel}...`,
       progress: 84,
       status: 'running',
     });
@@ -1426,13 +1450,18 @@ export async function runStage1Pipeline({
     for (let ttsAttempt = 0; ttsAttempt < 3; ttsAttempt++) {
       try {
         if (ttsAttempt > 0) {
-          console.log(`[Job ${jobId}] Retrying Edge-TTS (attempt ${ttsAttempt + 1})...`);
+          console.log(`[Job ${jobId}] Retrying TTS (${ttsLabel}) (attempt ${ttsAttempt + 1})...`);
           await new Promise(r => setTimeout(r, 2000));
         }
         ttsResult = await generateVoiceoverTTS({
           script: scriptData.voiceoverScript || rawVoiceScript,
           outputPath: autoVoiceoverPath,
           targetDurationSec: silentDurationSec,
+          provider: activeTtsProvider,
+          modelId: ttsModelToUse,
+          fallbackModelId: ttsFallbackModelToUse,
+          voice: ttsVoiceToUse,
+          apiKey: options.geminiApiKey || apiKey || process.env.GEMINI_API_KEY,
           onProgress: (msg) => updateProgress({ step: 'tts_generating', message: `🎙️ ${msg}`, progress: 86, status: 'running' }),
           jobId,
           lexicon: scriptData.lexicon_to_replace || {},
@@ -1440,7 +1469,7 @@ export async function runStage1Pipeline({
         ttsSucceeded = true;
         break;
       } catch (ttsErr) {
-        console.error(`[Job ${jobId}] Edge-TTS Attempt ${ttsAttempt + 1} Error:`, ttsErr.message);
+        console.error(`[Job ${jobId}] TTS (${ttsLabel}) Attempt ${ttsAttempt + 1} Error:`, ttsErr.message);
         if (ttsAttempt === 2) {
           console.warn(`[Job ${jobId}] TTS gagal setelah 3 percobaan. Video 1080p tetap disimpan di history sebagai awaiting_voiceover.`);
         }
@@ -1516,8 +1545,10 @@ export async function runStage1Pipeline({
           downloadUrl: `/api/download/${finalFileName}?t=${cacheBuster}`,
           finalLocalPath: finalOutputPath,
           voiceoverAudioUrl: `/api/audio/${voiceoverFileName}?t=${cacheBuster}`,
-          ttsVoice: ttsResult.voice || 'Gadis Indonesia (Neural)',
-          ttsProvider: ttsResult.provider || 'edge_neural',
+          ttsVoice: ttsResult.voice || ttsVoiceToUse,
+          ttsProvider: ttsResult.provider || activeTtsProvider,
+          ttsModel: ttsResult.modelId || ttsModelToUse,
+          ttsFallbackModel: ttsFallbackModelToUse,
           cleanScript: ttsResult.cleanScript,
           wordBoundaries: ttsResult.wordBoundaries || [],
           downloadedVideoPath: null,
@@ -2202,7 +2233,16 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
   };
 
   try {
-    updateProgress({ step: 'tts_generating', message: '🎙️ Menghasilkan voice over Gadis (Edge-TTS Neural)...', progress: 20, status: 'running' });
+    const activeTtsProvider = (options.ttsProvider || job.ttsProvider || process.env.TTS_PROVIDER || 'gemini_tts').toLowerCase().trim();
+    const isGeminiTts = activeTtsProvider === 'gemini_tts';
+    const ttsModelToUse = options.ttsModel || job.ttsModel || process.env.GEMINI_TTS_MODEL || DEFAULT_GEMINI_TTS_MODEL;
+    const ttsFallbackModelToUse = options.ttsFallbackModel || job.ttsFallbackModel || process.env.GEMINI_TTS_FALLBACK_MODEL || DEFAULT_GEMINI_TTS_FALLBACK_MODEL;
+    const ttsVoiceToUse = options.ttsVoice || job.ttsVoice || process.env.GEMINI_TTS_VOICE || DEFAULT_GEMINI_TTS_VOICE;
+    const ttsLabel = isGeminiTts
+      ? `Gemini Flash (${ttsModelToUse} - ${ttsVoiceToUse})`
+      : 'Edge-TTS Gadis';
+
+    updateProgress({ step: 'tts_generating', message: `🎙️ Menghasilkan voice over ${ttsLabel}...`, progress: 20, status: 'running' });
 
     const silentDurationSec = (await getMediaDurationSec(silentPath)) || job.highlight?.duration || 20;
 
@@ -2215,6 +2255,11 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
       script: scriptToUse,
       outputPath: voiceoverAudioPath,
       targetDurationSec: silentDurationSec,
+      provider: activeTtsProvider,
+      modelId: ttsModelToUse,
+      fallbackModelId: ttsFallbackModelToUse,
+      voice: ttsVoiceToUse,
+      apiKey: options.geminiApiKey || job.geminiApiKey || process.env.GEMINI_API_KEY,
       onProgress: (msg) => updateProgress({ step: 'tts_generating', message: `🎙️ ${msg}`, progress: 35, status: 'running' }),
       jobId,
       lexicon: effectiveLexicon,
@@ -2268,8 +2313,10 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
       downloadUrl: `/api/download/${finalFileName}?t=${cacheBuster}`,
       finalLocalPath: finalOutputPath,
       voiceoverAudioUrl: `/api/audio/${voiceoverFileName}?t=${cacheBuster}`,
-      ttsVoice: ttsResult.voice || 'Gadis (Edge-TTS Neural)',
-      ttsProvider: ttsResult.provider || 'edge_tts',
+      ttsVoice: ttsResult.voice || ttsVoiceToUse,
+      ttsProvider: ttsResult.provider || activeTtsProvider,
+      ttsModel: ttsResult.modelId || ttsModelToUse,
+      ttsFallbackModel: ttsFallbackModelToUse,
       cleanScript: ttsResult.cleanScript,
       lexicon: effectiveLexicon,
       wordBoundaries: ttsResult.wordBoundaries || [],
@@ -2296,12 +2343,21 @@ async function processJobVoiceover(jobId, customScript = null, options = {}) {
 // 6b. Regenerate Voiceover automatically via TTS & Re-render Final Video (Single Job)
 app.post('/api/regenerate-voiceover', async (req, res) => {
   reloadEnvironment();
-  const { jobId, customScript, lexicon, aspectRatio, padColor } = req.body;
+  const { jobId, customScript, lexicon, aspectRatio, padColor, ttsProvider, ttsModel, ttsFallbackModel, ttsVoice, apiKey } = req.body;
 
   if (!jobId) return res.status(400).json({ error: 'Job ID is required.' });
 
   try {
-    const updatedJob = await processJobVoiceover(jobId, customScript, { lexicon, aspectRatio, padColor });
+    const updatedJob = await processJobVoiceover(jobId, customScript, {
+      lexicon,
+      aspectRatio,
+      padColor,
+      ttsProvider,
+      ttsModel,
+      ttsFallbackModel,
+      ttsVoice,
+      geminiApiKey: apiKey,
+    });
     res.json({ success: true, ...updatedJob });
   } catch (error) {
     const isQuota = error.isQuotaError || isQuotaErrorMessage(error.message);
@@ -2317,7 +2373,7 @@ app.post('/api/regenerate-voiceover', async (req, res) => {
 // ensures output subtitles remain 100% normal non-phonetic text, and re-renders video (16:9 pillar).
 app.post('/api/retry-job-tts', async (req, res) => {
   reloadEnvironment();
-  const { jobId, customScript, apiKey, aiProvider, aspectRatio, padColor } = req.body;
+  const { jobId, customScript, apiKey, aiProvider, aspectRatio, padColor, ttsProvider, ttsModel, ttsFallbackModel, ttsVoice } = req.body;
 
   if (!jobId) return res.status(400).json({ error: 'Job ID is required.' });
 
@@ -2364,6 +2420,11 @@ app.post('/api/retry-job-tts', async (req, res) => {
       lexicon: mergedLexicon,
       aspectRatio: aspectRatio || job.aspectRatio || '16:9',
       padColor: padColor || job.padColor,
+      ttsProvider,
+      ttsModel,
+      ttsFallbackModel,
+      ttsVoice,
+      geminiApiKey: apiKey,
     });
 
     res.json({
@@ -2400,6 +2461,7 @@ let currentBatchTTS = {
 // 6c. Start Server-Side Batch TTS Queue
 app.post('/api/batch-tts/start', async (req, res) => {
   reloadEnvironment();
+  const { ttsProvider, ttsModel, ttsFallbackModel, ttsVoice, apiKey } = req.body || {};
 
   if (currentBatchTTS.isRunning) {
     return res.json({ success: true, batch: currentBatchTTS, message: 'Batch TTS sudah berjalan di server.' });
@@ -2471,7 +2533,13 @@ app.post('/api/batch-tts/start', async (req, res) => {
       console.log(`[Batch TTS] (${i + 1}/${candidateJobs.length}) Processing: "${currentBatchTTS.currentProductTitle}" [${jobId}]`);
 
       try {
-        await processJobVoiceover(jobId);
+        await processJobVoiceover(jobId, null, {
+          ttsProvider,
+          ttsModel,
+          ttsFallbackModel,
+          ttsVoice,
+          geminiApiKey: apiKey,
+        });
         currentBatchTTS.successfulJobs++;
         console.log(`[Batch TTS] ✅ Success (${currentBatchTTS.successfulJobs}/${candidateJobs.length}) on Job [${jobId}]`);
       } catch (err) {
