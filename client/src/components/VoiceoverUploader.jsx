@@ -195,7 +195,7 @@ export default function VoiceoverUploader({
             <p className="text-xs text-slate-400">
               {hasAudioAlready
                 ? `Suara narasi ${displayVoice} sudah otomatis terpasang & subtitle tersinkron.`
-                : `Suara narasi ${displayVoice} otomatis disintesis via ${providerBadge} & disinkronkan ke video 9:16.`}
+                : `Suara narasi ${displayVoice} otomatis disintesis via ${providerBadge} & disinkronkan ke video YouTube.`}
             </p>
           </div>
         </div>

@@ -104,14 +104,14 @@ export default function InputCard({
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Tag className="w-4 h-4 text-amber-400" />
-              Judul / Nama Produk <span className="text-shopee-500">*</span>
+              Judul / Tipe Smartphone <span className="text-shopee-500">*</span>
             </span>
-            <span className="text-[11px] font-normal text-amber-300">Konteks Utama AI</span>
+            <span className="text-[11px] font-normal text-amber-300">Target HP 2 Jutaan+</span>
           </label>
           <input
             type="text"
             required
-            placeholder="Contoh: Mini Portable Blender USB 350ml Rechargeable"
+            placeholder="Contoh: Infinix Note 40 Pro 5G / POCO X6 Pro / Samsung Galaxy A55"
             value={formData.productTitle || ''}
             onChange={(e) => setFormData({ ...formData, productTitle: e.target.value })}
             className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all font-sans"
@@ -133,13 +133,13 @@ export default function InputCard({
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <AlignLeft className="w-4 h-4 text-indigo-400" />
-              Deskripsi & Spesifikasi Produk (Opsional / Rekomendasi)
+              Spesifikasi & Keunggulan Smartphone (Opsional / Rekomendasi)
             </span>
-            <span className="text-[11px] font-normal text-slate-400">Poin penting naskah</span>
+            <span className="text-[11px] font-normal text-slate-400">Poin penting review</span>
           </label>
           <textarea
             rows={3}
-            placeholder="Contoh: Kapasitas 350ml, 4 mata pisau stainless steel, baterai tahan 15x pemakaian, waterproof, praktis buat jus & smoothie, mudah dicuci."
+            placeholder="Contoh: Layar AMOLED 120Hz, Chipset Dimensity 7020 / Snapdragon, RAM 8GB/256GB, Android 16, Baterai 5000mAh 45W, Kamera 108MP OIS + Depan 32MP."
             value={formData.productDescription || ''}
             onChange={(e) => setFormData({ ...formData, productDescription: e.target.value })}
             className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-sans resize-none"
@@ -151,9 +151,9 @@ export default function InputCard({
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Youtube className="w-4 h-4 text-red-500" />
-              YouTube Video URL <span className="text-shopee-500">*</span>
+              YouTube Video Source URL <span className="text-shopee-500">*</span>
             </span>
-            <span className="text-[11px] font-normal text-slate-400">Faceless AI Highlight</span>
+            <span className="text-[11px] font-normal text-slate-400">16:9 HD Highlight</span>
           </label>
           <input
             type="url"
@@ -170,14 +170,14 @@ export default function InputCard({
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <ShoppingBag className="w-4 h-4 text-shopee-500" />
-              Shopee Affiliate Link <span className="text-shopee-500">*</span>
+              Affiliate / Link Produk (Deskripsi Video) <span className="text-shopee-500">*</span>
             </span>
-            <span className="text-[11px] font-normal text-slate-400">Tersimpan untuk referensi produk & script.txt</span>
+            <span className="text-[11px] font-normal text-slate-400">Diarahkan di CTA naskah & deskripsi</span>
           </label>
           <input
             type="text"
             required
-            placeholder="https://shope.ee/abcdef..."
+            placeholder="https://tokopedia.link/... atau https://shope.ee/..."
             value={formData.shopeeLink}
             onChange={(e) => setFormData({ ...formData, shopeeLink: e.target.value })}
             className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-shopee-500/50 focus:border-shopee-500 transition-all font-mono"
@@ -246,7 +246,7 @@ export default function InputCard({
             ) : (
               <>
                 <Sparkles className="w-5 h-5 fill-current" />
-                <span>Generate Kotak Scene & Video 9:16</span>
+                <span>Generate Review HP & Video YouTube</span>
               </>
             )}
           </button>

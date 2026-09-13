@@ -124,14 +124,14 @@ export default function Navbar({ onOpenSettings, engineStatus }) {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-lg text-white tracking-tight">
-                  Local AI Affiliate Clipper
+                  YTCLIPER Tech Review
                 </h1>
-                <span className="bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
-                  9:16 Reels Engine
+                <span className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 text-red-400 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
+                  YouTube 16:9 HD
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Auto-generate viral Shopee Affiliate clips via openrouter/free &amp; FFmpeg
+                AI Smartphone Spec Review Generator (16:9 Landscape YouTube Layout &amp; Camera Deep-Dive)
               </p>
             </div>
           </div>

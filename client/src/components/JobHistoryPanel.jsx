@@ -533,7 +533,7 @@ export default function JobHistoryPanel({ onSelectJob, onRetryJob, currentJobId,
                 <p className="text-[11px] text-slate-300 mt-0.5 truncate max-w-[340px] sm:max-w-[480px]">
                   {batchStatus.isRunning
                     ? `Sedang memproses: "${batchStatus.currentProductTitle || 'Menyiapkan video...'}" · (${batchStatus.successfulJobs} Berhasil, ${batchStatus.failedJobs} Gagal)`
-                    : 'Video 9:16 sudah selesai dipotong. Siap digabungkan dengan suara AI & subtitle satu per satu secara berurutan.'}
+                    : 'Video YouTube sudah selesai dipotong. Siap digabungkan dengan suara AI & subtitle satu per satu secara berurutan.'}
                 </p>
               </div>
             </div>
