@@ -56,6 +56,7 @@ function getYtDlpBaseArgs() {
   const args = [
     '--no-check-certificates',
     '--geo-bypass',
+    '--remote-components', 'ejs:github',
   ];
 
   if (cookiesArgs.length) args.push(...cookiesArgs);
@@ -95,16 +96,16 @@ export async function fetchVideoMetadataAndStream(url, { onProgress = () => {} }
     proc.stderr.on('data', (d) => stderr += d.toString());
 
     proc.on('close', (code) => {
-       if (code === 0 && stdout) {
-         try {
-           const parsedMeta = JSON.parse(stdout.trim());
-           const metaBytes = Buffer.byteLength(stdout || '', 'utf-8');
-           trackBandwidth('metadata', metaBytes, `Metadata video: ${(parsedMeta.title || '').slice(0, 40)}`);
-           resolve(parsedMeta);
-         } catch (e) {
-           reject(new Error(`Gagal membaca metadata JSON yt-dlp: ${e.message}`));
-         }
-       } else {
+      if (code === 0 && stdout) {
+        try {
+          const parsedMeta = JSON.parse(stdout.trim());
+          const metaBytes = Buffer.byteLength(stdout || '', 'utf-8');
+          trackBandwidth('metadata', metaBytes, `Metadata video: ${(parsedMeta.title || '').slice(0, 40)}`);
+          resolve(parsedMeta);
+        } catch (e) {
+          reject(new Error(`Gagal membaca metadata JSON yt-dlp: ${e.message}`));
+        }
+      } else {
         reject(new Error(`yt-dlp metadata failed (code ${code}): ${stderr.slice(-300)}`));
       }
     });
@@ -175,10 +176,10 @@ export function checkVideoMetadataCompliance(metadata, productTitle = '', option
     return { eligible: false, reason: 'Metadata video kosong atau tidak tersedia.' };
   }
 
-  // 1. Durasi Video (Wajib antara 5 menit s/d 15 menit)
+  // 1. Durasi Video (Wajib antara 35 detik s/d 15 menit)
   const duration = Number(metadata.duration) || 0;
-  if (duration > 0 && duration < 300) {
-    return { eligible: false, reason: `Durasi video terlalu pendek (${Math.round(duration)} detik / ${(duration / 60).toFixed(1)} menit). Minimal durasi video 5 menit agar memiliki peragaan produk yang memadai.` };
+  if (duration > 0 && duration < 35) {
+    return { eligible: false, reason: `Durasi video terlalu pendek (${Math.round(duration)} detik). Minimal durasi video 35 detik agar memiliki footage peragaan produk yang memadai untuk video final 30-35 detik.` };
   }
   if (duration > 900) {
     return { eligible: false, reason: `Durasi video terlalu panjang (${(duration / 60).toFixed(1)} menit). Maksimal durasi video 15 menit.` };
@@ -198,6 +199,24 @@ export function checkVideoMetadataCompliance(metadata, productTitle = '', option
   ];
   if (subtitleKeywords.some(kw => combinedText.includes(kw))) {
     return { eligible: false, reason: 'Terdeteksi indikasi teks subtitle bawaan pada judul/deskripsi/tags.' };
+  }
+
+  // 2B. Filter Kata Kunci Terlarang (cara / tutorial / DIY / unboxing / perbaikan / penggantian / rusak / service / ganti)
+  const bannedKeywordRegex = /\b(cara|tutorial|diy|how\s+to|do\s+it\s+yourself|unboxing|perbaikan|penggantian|pergantian|mengganti|rusak|service|servis|ganti|repair|reparasi|bongkar)\b/i;
+  if (bannedKeywordRegex.test(titleLower)) {
+    return { eligible: false, reason: 'Terdeteksi kata kunci terlarang (cara / tutorial / DIY / unboxing / perbaikan / penggantian / rusak / service / ganti) pada judul video.' };
+  }
+
+  // 2C. Filter Konten Perbaikan / Servis / Barang Rusak pada Deskripsi
+  const repairDescRegex = /\b(perbaikan|penggantian|pergantian|mengganti|rusak|kerusakan|service|servis|reparasi|bongkar mesin|mati total)\b/i;
+  if (repairDescRegex.test(descLower.slice(0, 500))) {
+    return { eligible: false, reason: 'Terdeteksi indikasi konten perbaikan / servis / penggantian alat rusak pada deskripsi video.' };
+  }
+
+  // 2D. Filter Resep Makanan, Kuliner, Mukbang & Minuman Tanpa Review Alat
+  const foodRecipeRegex = /\b(resep|recipe|mukbang|kuliner|jajanan|street food|food review|drink review|asmr makan|asmr eat|resep masakan|menu buka puasa|menu sahur|boba milk tea|minuman kekinian|olahan makanan)\b/i;
+  if (foodRecipeRegex.test(titleLower)) {
+    return { eligible: false, reason: 'Judul video mengindikasikan konten resep makanan, kuliner, mukbang, atau review minuman (bukan demonstrasi produk alat dapur).' };
   }
 
   // 3. Filter Iklan & Sponsor Komersial
@@ -250,16 +269,24 @@ export function checkVideoMetadataCompliance(metadata, productTitle = '', option
     return { eligible: false, reason: 'Video terindikasi animasi, kartun, atau buatan AI.' };
   }
 
-  // 7. Kesesuaian Kata Kunci Produk Target (Policy 1 & Policy 2: Core Noun & Multi-word Intersection)
+  // 7. Kesesuaian Kategori Produk Target (Cross-Category Exclusion)
+  // Per instruksi pengguna: Pencocokan fisik produk spesifik di-handle AI Vision agar lebih stabil.
+  // Backend HANYA memblokir kategori non-dapur terlarang (otomotif, motor, mobil, las, skincare, gameplay, anime, vlog).
   if (productTitle && productTitle.trim()) {
     const prodInfo = extractCoreProductInfo(productTitle, metadata.description || '');
-    const coreWords = prodInfo.coreWords || [];
+    const coreWords = prodInfo.multilingualWords || prodInfo.coreWords || [];
 
-    // Local check on video title against core product words and cross-category exclusions
-    if (!isTitleMatchingProduct(metadata.title, coreWords)) {
+    // Cek pengecualian kategori silang non-dapur terlarang
+    const crossCategoryPass = isTitleMatchingProduct(metadata.title, coreWords, {
+      description: metadata.description,
+      tags: metadata.tags,
+      isVisualSearch: true, // Delegasikan verifikasi fisik produk detail ke AI Vision
+    });
+
+    if (!crossCategoryPass) {
       return {
         eligible: false,
-        reason: `Judul video YouTube ("${metadata.title}") tidak cocok dengan produk target ("${prodInfo.coreProductNoun}"). Dibutuhkan kecocokan multi-kata kunci produk.`
+        reason: `Judul / deskripsi video YouTube ("${metadata.title}") terindikasi kategori silang yang dilarang (otomotif/skincare/anime/vlog).`
       };
     }
   }
@@ -339,9 +366,38 @@ export async function sampleFramesFromStream(streamUrl, outputDir, {
   }
   await Promise.all(executing);
 
-  const frameFiles = fs.readdirSync(outputDir)
+  let frameFiles = fs.readdirSync(outputDir)
     .filter(f => f.endsWith('.png') || f.endsWith('.jpg'))
     .sort();
+
+  // Percobaan kedua internal: Jika fast input seek menghasilkan 0 frame, coba mode output seek
+  if (frameFiles.length === 0) {
+    console.warn('[VideoFilterService] Fast input seek menghasilkan 0 frame, mencoba mode output seek...');
+    const fallbackPoints = samplePoints.slice(0, 10);
+    for (const point of fallbackPoints) {
+      const frameFile = `frame_${String(point.index).padStart(4, '0')}.jpg`;
+      const outputPath = path.join(outputDir, frameFile);
+      await new Promise((resolve) => {
+        const proc = spawn(ffmpegPath, [
+          '-y',
+          '-reconnect', '1',
+          '-reconnect_streamed', '1',
+          '-reconnect_delay_max', '4',
+          '-i', streamUrl,
+          '-ss', String(point.timestamp),
+          '-frames:v', '1',
+          '-vf', 'scale=-2:360',
+          '-q:v', '3',
+          outputPath
+        ]);
+        proc.on('close', () => resolve());
+        proc.on('error', () => resolve());
+      });
+    }
+    frameFiles = fs.readdirSync(outputDir)
+      .filter(f => f.endsWith('.png') || f.endsWith('.jpg'))
+      .sort();
+  }
 
   if (frameFiles.length === 0) {
     throw new Error('Tidak ada frame yang berhasil diekstrak dari stream URL.');
@@ -399,24 +455,92 @@ export async function sampleFramesFromStream(streamUrl, outputDir, {
 }
 
 /**
- * ── TAHAP 2: ANALISA LOKAL AREA 9:16 (0 TOKEN AI) ───────────────────────────
- * Memeriksa frame visual HANYA pada area tengah rasio 9:16.
- * CATATAN PENTING:
- * Di KEDUA project (clipper maupun YTCLIPER), bagian kiri dan kanan video 16:9
- * akan DIBUANG (di-crop keluar pada clipper, dan tertutup pilar pada YTCLIPER).
- * Oleh karena itu, jika ada watermark/logo di sayap kiri atau kanan, video
- * TETAP DITERIMA di kedua project karena bagian tersebut tidak akan tampil!
- * Yang diperiksa dan wajib 100% bersih hanyalah area tengah 9:16.
+ * ── TAHAP 2B: ANALISA LOKAL 9:16 (0 TOKEN AI, HEMAT KUOTA GEMINI) ─────────────
+ * Per instruksi pengguna: Verifikasi grafis visual (logo channel, watermark, stiker grafis,
+/**
+ * Memanggil AI Local Frame Gatekeeper microservice di port 5050 (MediaPipe + DBNet + MobileNetV3).
+ * Mengembalikan hasil pra-pemrosesan AI jika service aktif di background (PM2/daemon).
  */
-export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress = () => {} } = {}) {
+export function callAIGatekeeperMicroservice(frames, { timeoutSec = 5, onProgress = () => {} } = {}) {
+  try {
+    const validFrames = frames.filter(f => f && f.filePath && fs.existsSync(f.filePath));
+    if (validFrames.length === 0) return null;
+
+    const payload = JSON.stringify({
+      frames: validFrames.map(f => ({
+        filePath: f.filePath,
+        timestamp: f.timestamp || 0
+      }))
+    });
+
+    const res = spawnSync('curl', [
+      '-s',
+      '-m', String(timeoutSec),
+      '-X', 'POST',
+      'http://127.0.0.1:5050/filter-frames',
+      '-H', 'Content-Type: application/json',
+      '-d', payload
+    ], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+
+    if (res.status === 0 && res.stdout) {
+      const parsed = JSON.parse(res.stdout.trim());
+      if (parsed && parsed.status === 'success') {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    // Graceful fallback to heuristic checks
+  }
+  return null;
+}
+
+/**
+ * ── TAHAP 2: INSPEKSI & FILTER FRAME LOKAL (AI GATEKEEPER + HEURISTIK FALLBACK) ──
+ * Memeriksa frame visual yang telah disampel di server lokal sebelum mengirim ke AI utama.
+ * Tahap 1: MediaPipe Face Detection (100% faceless).
+ * Tahap 2: DBNet Text Detection (membuang subtitle terbakar & promo overlay).
+ * Tahap 3: MobileNetV3 (membuang bumper foto statis & kartun/animasi).
+ */
+export function inspectFramesLocally(frames, { aspectRatio = '9:16', allowPartialClean = false, onProgress = () => {} } = {}) {
   if (!Array.isArray(frames) || frames.length < 5) {
-    return { eligible: false, reason: 'Jumlah frame visual tidak mencukupi untuk dianalisa.' };
+    return { eligible: false, cleanFrames: [], discardedFrames: [], reason: 'Jumlah frame visual tidak mencukupi untuk dianalisa.' };
   }
 
+  // ── 0. COBA EVALUASI DENGAN AI LOCAL GATEKEEPER (MediaPipe + DBNet + MobileNetV3) ──
+  const aiResult = callAIGatekeeperMicroservice(frames, { timeoutSec: 4, onProgress });
+  if (aiResult && aiResult.allFrames && aiResult.allFrames.length > 0) {
+    const cleanFrames = aiResult.allFrames.filter(f => f.status === 'clean');
+    const discardedFrames = aiResult.allFrames.filter(f => f.status !== 'clean');
+
+    const cleanRatio = cleanFrames.length / frames.length;
+    const isEligible = allowPartialClean
+      ? cleanFrames.length >= 3
+      : (cleanFrames.length >= 4 && cleanRatio >= 0.35);
+
+    if (isEligible) {
+      console.log(`[inspectFramesLocally] 🤖 AI Local Gatekeeper: ${cleanFrames.length}/${frames.length} frame bersih lolos (${aiResult.benchmarks?.totalMs || 0}ms).`);
+    } else {
+      console.warn(`[inspectFramesLocally] ⛔ AI Local Gatekeeper menolak video: ${aiResult.reason} (${cleanFrames.length}/${frames.length} frame bersih).`);
+    }
+
+    return {
+      eligible: isEligible,
+      cleanFrames,
+      discardedFrames,
+      reason: aiResult.reason,
+      hasOpeningIntro: Boolean(aiResult.hasOpeningIntro),
+      introCutoffSec: aiResult.introCutoffSec || 0.0,
+      gatekeeperBackend: 'ai_gatekeeper_v1'
+    };
+  }
+
+  // ── FALLBACK KE HEURISTIK PIKSEL FFmpeg (Jika Gatekeeper Python offline) ──
   const ffmpeg = getFFmpegPath();
   const W = 80;
   const H = 144;
   const frameBuffers = [];
+  const cleanFrames = [];
+  const discardedFrames = [];
 
   let subtitleBandCount = 0;
   let floatingTextCount = 0;
@@ -425,6 +549,7 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
   let blackFrameCount = 0;
   let bumperSlideCount = 0;
   let staticLogoCount = 0;
+  let staticLogoReason = '';
 
   // Ekstrak area 9:16 tengah sekali saja per frame dalam RGB24 (80x144, 34 KB per frame)
   for (const f of frames) {
@@ -433,7 +558,7 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
     const res = spawnSync(ffmpeg, [
       '-y',
       '-i', f.filePath,
-      '-vf', `crop=w=iw*0.5:h=ih:x=iw*0.25:y=0,scale=${W}:${H}`,
+      '-vf', `crop=w='min(iw,ih*9/16)':h='min(ih,iw*16/9)':x='(iw-ow)/2':y='(ih-oh)/2',scale=${W}:${H}`,
       '-f', 'rawvideo',
       '-pix_fmt', 'rgb24',
       '-'
@@ -445,7 +570,7 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
   }
 
   if (frameBuffers.length < 4) {
-    return { eligible: false, reason: 'Gagal mengekstrak frame visual untuk analisa lokal.' };
+    return { eligible: false, cleanFrames: [], discardedFrames: [], reason: 'Gagal mengekstrak frame visual untuk analisa lokal.' };
   }
 
   // ── 1. PEMERIKSAAN FOTO BUMPER & FRAME BEKU STATIS (TEMPORAL GLOBAL DIFFERENCE) ──
@@ -472,8 +597,11 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
     }
   }
 
-  // ── 2. PEMERIKSAAN LOGO / IDENTITAS CHANNEL STATIS DI AREA TENGAH 9:16 ──
-  // Abaikan frame pembuka jika video memiliki opening intro bumper (karena wajar jika kartu intro pembuka memiliki logo yang akan dibuang)
+  // ── 2. PEMERIKSAAN LOGO / WATERMARK / IDENTITAS CHANNEL STATIS DI AREA TENGAH 9:16 ──
+  // Menyelidiki seluruh area tengah 9:16 (termasuk 4 sudut dan area atas/bawah) dengan persistensi multi-frame
+  const pixelPersistence = new Uint8Array(W * H);
+  let boldStaticLogoPairCount = 0;
+
   for (let t = 0; t < frameBuffers.length - 1; t++) {
     const ts = frames[t]?.timestamp ?? (t * 3);
     if (openingBumperCount > 0 && (ts <= 5.0 || t <= 1)) {
@@ -482,37 +610,83 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
 
     const bt1 = frameBuffers[t];
     const bt2 = frameBuffers[t + 1];
-    let staticEdgePixels = 0;
+    let boldStaticCornerEdges = 0;
 
-    for (let y = 15; y < 120; y++) {
-      for (let x = 15; x < 65; x++) {
+    for (let y = 3; y < H - 3; y++) {
+      for (let x = 3; x < W - 3; x++) {
+        const isCorner = (x < 24 && y < 35) || (x > 56 && y < 35) || (x < 24 && y > 108) || (x > 56 && y > 108);
         const idx = (y * W + x) * 3;
-        const prevIdx = (y * W + (x - 1)) * 3;
+        const leftIdx = (y * W + (x - 1)) * 3;
+        const upIdx = ((y - 1) * W + x) * 3;
 
         const r1 = bt1[idx], g1 = bt1[idx + 1], b1 = bt1[idx + 2];
-        const pr1 = bt1[prevIdx], pg1 = bt1[prevIdx + 1], pb1 = bt1[prevIdx + 2];
-        const spatialEdge = (Math.abs(r1 - pr1) + Math.abs(g1 - pg1) + Math.abs(b1 - pb1)) / 3;
+        const rLeft = bt1[leftIdx], gLeft = bt1[leftIdx + 1], bLeft = bt1[leftIdx + 2];
+        const rUp = bt1[upIdx], gUp = bt1[upIdx + 1], bUp = bt1[upIdx + 2];
 
-        if (spatialEdge > 60) {
+        const dx = (Math.abs(r1 - rLeft) + Math.abs(g1 - gLeft) + Math.abs(b1 - bLeft)) / 3;
+        const dy = (Math.abs(r1 - rUp) + Math.abs(g1 - gUp) + Math.abs(b1 - bUp)) / 3;
+        const spatialEdge = Math.max(dx, dy);
+
+        // 1. Akumulasi persistensi temporal lintas frame (spatialEdge >= 22, temporalDiff <= 10)
+        // Menangkap logo channel semi-transparan, watermark teks, dan badge digital
+        if (spatialEdge >= 22) {
           const r2 = bt2[idx], g2 = bt2[idx + 1], b2 = bt2[idx + 2];
           const temporalDiff = (Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2)) / 3;
-          if (temporalDiff < 5) {
-            staticEdgePixels++;
+          if (temporalDiff <= 10) {
+            pixelPersistence[y * W + x]++;
+            // 2. Cek logo sudut kontras sangat tinggi per pair (spatialEdge >= 55, temporalDiff <= 7)
+            if (isCorner && spatialEdge >= 55 && temporalDiff <= 7) {
+              boldStaticCornerEdges++;
+            }
           }
         }
       }
     }
 
-    if (staticEdgePixels >= 20) {
-      staticLogoCount++;
+    if (boldStaticCornerEdges >= 15) {
+      boldStaticLogoPairCount++;
     }
+  }
+
+  // Hitung piksel dengan persistensi tinggi lintas banyak frame (>= 4 pasangan frame sepanjang video)
+  let totalPersistent = 0;
+  let topLeftPersistent = 0;
+  let topRightPersistent = 0;
+  let bottomLeftPersistent = 0;
+  let bottomRightPersistent = 0;
+
+  for (let y = 3; y < H - 3; y++) {
+    for (let x = 3; x < W - 3; x++) {
+      if (pixelPersistence[y * W + x] >= 4) {
+        totalPersistent++;
+        if (x < 24 && y < 35) topLeftPersistent++;
+        if (x > 56 && y < 35) topRightPersistent++;
+        if (x < 24 && y > 108) bottomLeftPersistent++;
+        if (x > 56 && y > 108) bottomRightPersistent++;
+      }
+    }
+  }
+
+  const isCornerLogo = topLeftPersistent >= 10 || topRightPersistent >= 10 || bottomLeftPersistent >= 10 || bottomRightPersistent >= 10;
+  const isWatermarkOverlay = totalPersistent >= 28;
+  const isBoldLogo = boldStaticLogoPairCount >= 3;
+
+  if (isCornerLogo) {
+    staticLogoCount = Math.max(topLeftPersistent, topRightPersistent, bottomLeftPersistent, bottomRightPersistent);
+    staticLogoReason = `Analisa visual lokal mendeteksi logo channel statis di area sudut frame 9:16 (TL:${topLeftPersistent}, TR:${topRightPersistent}, BL:${bottomLeftPersistent}, BR:${bottomRightPersistent} piksel persisten).`;
+  } else if (isWatermarkOverlay) {
+    staticLogoCount = totalPersistent;
+    staticLogoReason = `Analisa visual lokal mendeteksi watermark / identitas channel statis di frame 9:16 (${totalPersistent} piksel persisten).`;
+  } else if (isBoldLogo) {
+    staticLogoCount = boldStaticLogoPairCount;
+    staticLogoReason = `Analisa visual lokal mendeteksi logo sudut statis kontras tinggi di frame 9:16 (${boldStaticLogoPairCount} perbandingan frame).`;
   }
 
   // ── 3. PEMERIKSAAN PER-FRAME KONTEN (SUBTITLE, FLOATING TEXT, GRAFIS ANIMASI & WAJAH) ──
   const subStartY = Math.floor(H * 0.75); // y >= 108
   const floatStartY = Math.floor(H * 0.12); // y >= 17
   const floatEndY = Math.floor(H * 0.72); // y <= 104
-  const faceEndY = Math.floor(H * 0.45); // y <= 65
+  const faceEndY = Math.floor(H * 0.65); // y <= 93 (Area atas hingga dada/leher)
 
   for (let i = 0; i < frameBuffers.length; i++) {
     const ts = frames[i]?.timestamp ?? (i * 3);
@@ -554,7 +728,7 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
           }
         }
 
-        // C. Grafis Animasi Overlay / Stiker Digital (Hyper-saturated synthetic colors)
+        // C. Grafis Animasi Overlay / Stiker Digital
         const isHyperSaturatedGraphic = (sat > 0.72 && val > 130 && (
           (r > 210 && g > 170 && b < 60) || // Emoji/cartoon yellow
           (r > 200 && g < 70 && b < 70) ||   // Pure graphic red
@@ -564,15 +738,15 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
         ));
         if (isHyperSaturatedGraphic) animatedGraphicPixels++;
 
-        // D. Wajah Manusia Alami di Area Atas 45% (Bukan kartun, bukan kayu meja)
+        // D. Wajah / Tubuh Manusia di Area Atas 65%
         if (y < faceEndY) {
           const isSkin = (
             r > 75 && g > 45 && b > 25 &&
             (r > g) && (g > b) &&
-            (r - g >= 12) && (r - g <= 75) &&
-            (r - b >= 18) && (r - b <= 120) &&
-            (sat >= 0.18 && sat <= 0.65) &&
-            (val >= 60 && val <= 245)
+            (r - g >= 10) && (r - g <= 80) &&
+            (r - b >= 15) && (r - b <= 125) &&
+            (sat >= 0.15 && sat <= 0.70) &&
+            (val >= 55 && val <= 250)
           );
           if (isSkin) upperGenuineSkinPixels++;
         }
@@ -589,77 +763,201 @@ export function inspectFramesLocally(frames, { aspectRatio = '16:9', onProgress 
       if ((subWhitePixels / subTotal) > 0.05 && avgBrightness > 25) subtitleBandCount++;
       if ((floatTextWhitePixels / floatTotal) > 0.06 && (floatTextEdges / floatTotal) > 0.05) floatingTextCount++;
       if ((animatedGraphicPixels / (W * H)) > 0.03) animatedGraphicCount++;
-      if ((upperGenuineSkinPixels / upperTotal) > 0.20) humanFaceSkinCount++;
+      if ((upperGenuineSkinPixels / upperTotal) > 0.07) humanFaceSkinCount++;
+    }
+
+    // ── Klasifikasi granular per-frame (face, black, intro bumper vs clean) ──
+    const isFrameFace = (upperGenuineSkinPixels / upperTotal) > 0.07;
+    const isFrameBlack = avgBrightness < 8;
+    const isFrameIntro = Boolean(isOpeningFrame);
+
+    if (isFrameFace || isFrameBlack || isFrameIntro) {
+      discardedFrames.push({
+        ...frames[i],
+        index: i,
+        timestamp: ts,
+        filePath: frames[i]?.filePath,
+        reason: isFrameFace ? 'face' : (isFrameBlack ? 'black' : 'intro_bumper'),
+      });
+    } else {
+      cleanFrames.push({
+        ...frames[i],
+        index: i,
+        timestamp: ts,
+        filePath: frames[i]?.filePath,
+      });
     }
   }
 
-  // ── AMBANG BATAS NOL TOLERANSI KETAT DENGAN ALASAN SPESIFIK & AKURAT ──
-
-  // 1. Tolak jika ada foto bumper / kartu slide statis di badan video (bukan sekadar intro pembuka)
-  const totalBumperFrames = openingBumperCount + bodyBumperCount;
-  if (bodyBumperCount >= 1 || totalBumperFrames >= 3) {
-    return {
-      eligible: false,
-      reason: `Analisa visual lokal mendeteksi video berupa slideshow foto diam / bumper statis (${totalBumperFrames} frame beku). Wajib video bergerak nyata!`
-    };
+  // ── DELEGASI KE AI VISION: PENCATATAN DIAGNOSTIK NON-BLOCKING ──
+  // Per instruksi pengguna: Verifikasi grafis visual dan pencocokan produk di-handle AI Vision agar lebih stabil.
+  // Backend mencatat temuan heuristik sebagai info diagnostik dan tidak menolak video secara sepihak.
+  if (staticLogoReason) {
+    console.log(`[VideoFilter] Info diagnostik: ${staticLogoReason} -> Verifikasi grafis/logo diserahkan ke AI Vision.`);
   }
-
-  // 2. Tolak jika ada logo / identitas channel statis di frame tengah
-  if (staticLogoCount >= 2) {
-    return {
-      eligible: false,
-      reason: `Analisa visual lokal mendeteksi logo atau identitas channel statis di area tengah 9:16 (${staticLogoCount} perbandingan frame). Wajib video bersih tanpa logo channel!`
-    };
-  }
-
-  // 3. Tolak jika ada grafis animasi overlay / stiker kartun
-  if (animatedGraphicCount >= 2) {
-    return {
-      eligible: false,
-      reason: `Analisa visual lokal mendeteksi grafis animasi overlay / stiker digital di frame 9:16 (${animatedGraphicCount} frame). Wajib video produk fisik asli tanpa grafis animasi tempelan!`
-    };
-  }
-
-  // 4. Tolak jika ada teks subtitle bawaan (>= 2 frame terdeteksi)
   if (subtitleBandCount >= 2) {
-    return {
-      eligible: false,
-      reason: `Analisa visual lokal mendeteksi teks subtitle ucapan bawaan pada area bawah 9:16 (${subtitleBandCount} frame). Wajib video bersih tanpa subtitle!`
-    };
+    console.log(`[VideoFilter] Info diagnostik: Terdeteksi piksel terang di area bawah pada ${subtitleBandCount} frame -> Verifikasi subtitle diserahkan ke AI Vision.`);
   }
-
-  // 5. Tolak jika ada teks mengambang / stiker teks editan (>= 2 frame terdeteksi)
   if (floatingTextCount >= 2) {
+    console.log(`[VideoFilter] Info diagnostik: Terdeteksi tekstur teks pada ${floatingTextCount} frame -> Verifikasi teks diserahkan ke AI Vision.`);
+  }
+  if (animatedGraphicCount >= 2) {
+    console.log(`[VideoFilter] Info diagnostik: Terdeteksi saturasi grafis pada ${animatedGraphicCount} frame -> Verifikasi grafis diserahkan ke AI Vision.`);
+  }
+
+  // Tolak jika video didominasi wajah/manusia (>= 8 frame) atau tidak cukup frame peragaan produk bersih (< 8 frame) pada mode single
+  const isDominatedByFaces = humanFaceSkinCount >= 8;
+  const lacksCleanFrames = cleanFrames.length < 8;
+
+  if ((isDominatedByFaces || lacksCleanFrames) && !allowPartialClean) {
     return {
       eligible: false,
-      reason: `Analisa visual lokal mendeteksi teks mengambang / stiker teks promo editan pada area tengah 9:16 (${floatingTextCount} frame). Wajib video bersih tanpa teks mengambang!`
+      cleanFrames: [],
+      discardedFrames,
+      reason: isDominatedByFaces
+        ? `Analisa visual lokal mendeteksi video menampilkan wajah / presenter manusia (${humanFaceSkinCount} dari ${frameBuffers.length} frame). Wajib video 100% faceless peragaan tangan!`
+        : `Analisa visual lokal mendeteksi video tidak memiliki cukup frame peragaan produk bersih (${cleanFrames.length} frame, minimal 8 frame).`
     };
   }
 
-  // 6. Tolak jika wajah manusia muncul lebih dari 5 frame (> 5 frame terdeteksi, batas maksimal toleransi 1-5 frame)
-  // Kemunculan wajah sesekali (1-5 frame) ditoleransi lokal (scene wajah akan dibuang oleh AI & backend)
-  if (humanFaceSkinCount > 5) {
-    return {
-      eligible: false,
-      reason: `Analisa visual lokal mendeteksi keberadaan wajah manusia melebihi batas toleransi (${humanFaceSkinCount} frame, batas maks 5 frame). Wajib video peragaan produk tangan yang bersih!`
-    };
+  if (humanFaceSkinCount > 0) {
+    console.log(`[VideoFilter] Info diagnostik: Terdeteksi ${humanFaceSkinCount} frame wajah -> ${allowPartialClean ? 'Frame wajah disingkirkan dari pool AI' : 'AI akan membuang scene wajah'}.`);
+  }
+  const totalBumperFrames = openingBumperCount + bodyBumperCount;
+  if (bodyBumperCount >= 3) {
+    console.log(`[VideoFilter] Info diagnostik: Terdeteksi ${bodyBumperCount} frame diam -> Verifikasi keaslian video diserahkan ke AI Vision.`);
   }
 
-  // 7. Tolak jika mayoritas frame blank / hitam
+  // Hanya tolak jika mayoritas frame blank / hitam pekat (> 75%) yang menandakan stream corrupt
   const blackRatio = blackFrameCount / frameBuffers.length;
-  if (blackRatio > 0.35) {
+  if (blackRatio > 0.75) {
     return {
       eligible: false,
-      reason: `Analisa visual lokal mendeteksi terlalu banyak frame hitam / kosong (${Math.round(blackRatio * 100)}% frame).`
+      cleanFrames: [],
+      discardedFrames,
+      reason: `Analisa visual lokal mendeteksi video kosong / rusak (${Math.round(blackRatio * 100)}% frame hitam pekat).`
     };
   }
 
   return {
-    eligible: true,
+    eligible: cleanFrames.length > 0,
+    reason: cleanFrames.length === 0 ? 'Tidak ditemukan frame bersih peragaan tangan yang memenuhi syarat.' : undefined,
+    cleanFrames,
+    discardedFrames,
+    cleanFrameCount: cleanFrames.length,
+    discardedFrameCount: discardedFrames.length,
+    discardedFaceTimestamps: discardedFrames.filter(f => f.reason === 'face').map(f => f.timestamp),
     hasOpeningIntro: openingBumperCount > 0,
     introCutoffSec: openingBumperCount > 0 ? 5.0 : 0,
     hasOccasionalFace: humanFaceSkinCount > 0,
     faceFrameCount: humanFaceSkinCount,
+    hasStaticLogo: Boolean(staticLogoReason),
+    hasSubtitles: subtitleBandCount >= 2,
+    hasFloatingText: floatingTextCount >= 2,
+    hasAnimatedGraphic: animatedGraphicCount >= 2,
   };
 }
 
+/**
+ * Memfilter frame visual dari 1 kandidat secara granular per frame:
+ * Membuang hanya frame berwajah / intro / corrupt, mempertahankan frame bersih peragaan produk.
+ */
+export function filterCandidateFramesPerFrame(frames, { candidateIndex = 0, candidate = null } = {}) {
+  const result = inspectFramesLocally(frames, { allowPartialClean: true });
+  if (!result.eligible && result.reason && result.reason.includes('kosong / rusak')) {
+    return { candidateIndex, candidate, cleanFrames: [], eligible: false, reason: result.reason };
+  }
+
+  const clean = (result.cleanFrames || []).map(f => ({
+    ...f,
+    candidateIndex,
+    candidateTitle: candidate?.title || '',
+    candidateUrl: candidate?.url || '',
+    videoId: candidate?.id || '',
+    candidate,
+  }));
+
+  return {
+    candidateIndex,
+    candidate,
+    eligible: clean.length > 0,
+    cleanFrames: clean,
+    discardedCount: frames.length - clean.length,
+    totalFrames: frames.length,
+  };
+}
+
+/**
+ * Menggabungkan (pooling) frame-frame bersih dari hingga 5 kandidat video menjadi satu kumpulan ~30 frame pilihan.
+ * Menjamin distribusi berimbang antar kandidat dan menyematkan metadata sumber agar AI dapat menandai klipnya.
+ *
+ * @param {Array<{ candidateIndex: number, candidate: object, cleanFrames: Array }>} candidateResults
+ * @param {{ maxTotalFrames?: number }} options
+ * @returns {Array<{ candidateIndex: number, candidate: object, timestamp: number, filePath: string, displayLabel: string }>}
+ */
+export function poolMultiCandidateFrames(candidateResults, { maxTotalFrames = 30 } = {}) {
+  const valid = (candidateResults || []).filter(c => Array.isArray(c.cleanFrames) && c.cleanFrames.length > 0);
+  if (valid.length === 0) return [];
+
+  const perCand = Math.max(4, Math.floor(maxTotalFrames / valid.length));
+  const pooled = [];
+
+  // 1. Ambil porsi berimbang dari masing-masing kandidat
+  for (const item of valid) {
+    const cand = item.candidate;
+    const idx = item.candidateIndex;
+    const frames = item.cleanFrames;
+
+    if (frames.length <= perCand) {
+      for (const f of frames) {
+        pooled.push({
+          ...f,
+          candidateIndex: idx,
+          candidate: cand,
+          displayLabel: `Video #${idx + 1} (${formatSecondsLocal(f.timestamp)})`,
+        });
+      }
+    } else {
+      const step = frames.length / perCand;
+      for (let s = 0; s < perCand; s++) {
+        const frameIdx = Math.min(frames.length - 1, Math.floor(s * step));
+        const f = frames[frameIdx];
+        pooled.push({
+          ...f,
+          candidateIndex: idx,
+          candidate: cand,
+          displayLabel: `Video #${idx + 1} (${formatSecondsLocal(f.timestamp)})`,
+        });
+      }
+    }
+  }
+
+  // 2. Jika total belum mencapai maxTotalFrames, isi sisa kuota dari kandidat yang memiliki banyak frame bersih
+  if (pooled.length < maxTotalFrames) {
+    for (const item of valid) {
+      const cand = item.candidate;
+      const idx = item.candidateIndex;
+      for (const f of item.cleanFrames) {
+        if (!pooled.some(p => p.filePath === f.filePath)) {
+          pooled.push({
+            ...f,
+            candidateIndex: idx,
+            candidate: cand,
+            displayLabel: `Video #${idx + 1} (${formatSecondsLocal(f.timestamp)})`,
+          });
+          if (pooled.length >= maxTotalFrames) break;
+        }
+      }
+      if (pooled.length >= maxTotalFrames) break;
+    }
+  }
+
+  return pooled.slice(0, maxTotalFrames);
+}
+
+function formatSecondsLocal(secs) {
+  const s = Math.max(0, Math.floor(secs || 0));
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+}

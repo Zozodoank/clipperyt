@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename);
 
 const isWindows = process.platform === 'win32';
 const npmCmd = isWindows ? 'npm.cmd' : 'npm';
-const SERVER_PORT_START = 5000;
-const CLIENT_PORT = 3000;
+const SERVER_PORT_START = 5001;
+const CLIENT_PORT = 3001;
 
 function getNetworkIpAddresses() {
   const interfaces = os.networkInterfaces();

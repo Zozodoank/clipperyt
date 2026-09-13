@@ -1,7 +1,15 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import https from 'https';
-import { searchYouTubeVideos, extractVideoId } from './downloader.js';
+import { searchYouTubeVideos, extractVideoId, buildCleanYouTubeQuery, DIRTY_NEGATIVE_OPERATORS } from './downloader.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const USED_KEYWORDS_FILE = path.join(__dirname, '..', 'used_keywords.json');
+const JOBS_FILE = path.join(__dirname, '..', 'jobs.json');
 
 export const DEFAULT_AUTO_KEYWORDS = [
   // =========================================================================
@@ -47,53 +55,35 @@ export const DEFAULT_AUTO_KEYWORDS = [
   'alat pembuka kaleng putar praktis aman',
   'alat pembuka tutup botol toples serbaguna',
   'parutan serbaguna wadah penampung baskom',
+  'alat pemipil jagung serbaguna praktis',
+  'alat pemotong kentang french fries cutter',
+  'alat peremas kentang stainless potato ricer',
+  'gunting daun bawang sayur 5 lapis stainless',
+  'alat pembersih sisik ikan dengan wadah',
+  'sendok pembuat bakso bakwan anti lengket',
+  'alat pencetak burger patty press manual',
+  'pemisah putih kuning telur stainless',
+  'alat pengupas nanas nenas corer slicer',
+  'pemotong telur rebus kawat stainless',
+  'sendok porsi es krim scoop trigger stainless',
+  'pemeras bawang putih rocker stainless garlic',
+  'alat pemotong keju kawat stainless steel',
+  'parutan keju putar rotary cheese grater',
+  'pengupas kulit jeruk lemon zester stainless',
+  'alat perajang rempah daun stainless herb cutter',
+  'alat pengocok telur semi otomatis putar tekan',
+  'alat pelindung jari iris sayur stainless cutter guard',
+  'pisau dapur chef knife stainless tajam anti karat',
+  'pisau kupas buah sayur mini cover pelindung',
+  'pisau roti kue gerigi stainless steel',
+  'pisau daging mini cleaver stainless dapur',
+  'alat pengasah pisau dapur praktis 3 tahap roda',
+  'batu asahan pisau dapur grit halus presisi',
+  'alat pemotong pisang sosis praktis stainless',
+  'pemotong mentimun spiral wortel slicer',
 
   // =========================================================================
-  // 2. PENYIMPANAN, WADAH & ORGANIZER DAPUR (Kitchen Storage & Organizers)
-  // =========================================================================
-  'botol minyak kuas silikon 2 in 1 anti tumpah',
-  'botol semprot minyak spray olive oil praktis',
-  'tempat bumbu putar serbaguna dapur viral',
-  'dispenser beras otomatis anti kutu praktis',
-  'kotak telur organizer kulkas tingkat otomatis',
-  'sealer plastik mini portable perekat makanan',
-  'tutup makanan silikon stretch elastis reusable',
-  'wadah penyimpanan makanan kedap udara',
-  'tempat sendok garpu tirisan anti debu',
-  'wadah tirisan cuci beras buah sayur praktis',
-  'rak bumbu dapur tempel dinding stainless',
-  'rak tirisan cuci piring lipat atas wastafel',
-  'rak gantung tutup panci talenan dapur',
-  'dispenser kantong plastik sampah dapur praktis',
-  'botol bumbu dapur sendok terintegrasi praktis',
-  'wadah bumbu 4 sekat praktis sendok',
-  'rak gantungan cangkir gelas dapur tempel',
-  'tempat pisau dapur magnetic strip dinding',
-  'wadah penyimpanan sayur kulkas drain basket',
-  'kotak bumbu dapur putar 360 derajat',
-  'dispenser minyak goreng kaca otomatis tuang',
-  'rak sudut dapur susun serbaguna stainless',
-  'wadah kantong teh kopi gula kedap udara',
-  'kotak penyimpanan bawang cabai mini kulkas',
-  'rak bawah wastafel dapur expandable adjustable',
-  'rak piring stainless susun 2 tingkat tirisan',
-  'organizer kulkas laci gantung slide drawer',
-  'wadah bumbu dapur kaca label estetik',
-  'dispenser air galon meja mini keran',
-  'rak gantung spons cuci piring kran wastafel',
-  'tatakan sendok spatula silikon anti kotor meja',
-  'rak penyimpanan talenan nampan dapur standing',
-  'toples kaca kedap udara tutup bambu estetik',
-  'dispenser sereal biji-bijian putar otomatis',
-  'tempat tisu gulung dapur magnetik kulkas',
-  'rak gantung gelas wine cangkir bawah lemari',
-  'wadah minyak bekas jelantah saringan stainless',
-  'kotak organizer bumbu sachet kulkas dapur',
-  'rak bumbu dapur tingkat tangga akrilik estetik',
-  'penutup makanan payung tudung saji lipat',
-
-  // =========================================================================
-  // 3. PERALATAN MASAK MINI & BAKING (Mini Cooking & Baking Gadgets)
+  // 2. PERALATAN MASAK MINI, BAKING & GADGET KOMPOR (Mini Cooking & Baking)
   // =========================================================================
   'wajan penggorengan mini telur 4 lubang anti lengket',
   'panci listrik mini serbaguna portable',
@@ -135,239 +125,214 @@ export const DEFAULT_AUTO_KEYWORDS = [
   'penutup silikon microwave anti cipratan',
   'tatakan kompor gas pelindung api hemat gas',
   'pematik api kompor gas elektrik usb recharge',
+  'wajan tamagoyaki teflon telur gulung jepang mini',
+  'sarung tangan oven silikon anti panas tebal',
+  'jepitan mangkok piring panas silikon stainless',
+  'alas tatakan panci panas silikon tahan panas',
+  'sendok ukur bumbu set stainless magnetic',
+  'saringan tirisan mie minyak serbaguna stainless',
+  'pembuat churros cetakan kue semprit manual',
+  'capitan gorengan stainless dengan saringan tirisan',
+  'tatakan sutil tutup panci silikon anti panas',
+  'cetakan kue pukis mini anti lengket teflon',
+  'centong nasi silikon anti lengket berdiri',
+  'sendok kuah sup sayur silikon gagang kayu',
+  'irus sayur kuah stainless gagang tahan panas',
+  'panci sauce pan mini anti lengket susu mie',
+  'wajan teflon mini penggorengan telur 12cm',
+  'pemanggang roti bakar lipat kompor gas',
+  'alat pembuat sempol sate telur gulung mini',
+  'capitan silikon gorengan barbecue anti panas',
 
   // =========================================================================
-  // 4. ALAT KEBERSIHAN RUMAH & DAPUR (Cleaning Gadgets)
+  // 3. WADAH BUMBU, BOTOL & PERABOTAN DAPUR KOMPAK (Tabletop Furniture & Storage)
+  // (CATATAN: HANYA perabot meja/tabletop kompak, BUKAN lemari atau rak besar!)
   // =========================================================================
-  'alat pembersih sikat elektrik mini multifungsi',
+  'botol minyak kuas silikon 2 in 1 anti tumpah',
+  'botol semprot minyak spray olive oil praktis',
+  'tempat bumbu putar serbaguna dapur viral',
+  'dispenser beras mini otomatis anti kutu praktis',
+  'kotak telur organizer kulkas tingkat otomatis',
+  'sealer plastik mini portable perekat makanan',
+  'tutup makanan silikon stretch elastis reusable',
+  'wadah penyimpanan makanan kedap udara mini',
+  'tempat sendok garpu tirisan mini anti debu',
+  'wadah tirisan cuci beras buah sayur praktis',
+  'botol bumbu dapur sendok terintegrasi praktis',
+  'wadah bumbu 4 sekat praktis sendok',
+  'tempat pisau dapur magnetic strip dinding',
+  'wadah penyimpanan sayur kulkas drain basket',
+  'kotak bumbu dapur putar 360 derajat mini',
+  'dispenser minyak goreng kaca otomatis tuang',
+  'wadah kantong teh kopi gula kedap udara',
+  'kotak penyimpanan bawang cabai mini kulkas',
+  'wadah bumbu dapur kaca sendok label estetik',
+  'tatakan sendok spatula silikon anti kotor praktis',
+  'toples kaca kedap udara tutup bambu estetik',
+  'wadah minyak bekas jelantah saringan stainless',
+  'kotak organizer bumbu sachet mini kulkas',
+  'penutup makanan payung tudung saji lipat',
+  'corong lipat silikon minyak air serbaguna',
+  'wadah pencuci beras sayur drain bowl putar',
+  'botol saus mayones kecap squeeze bottle putar',
+  'saringan teh kopi stainless reusable infuser',
+  'tempat pisau blok dapur minimalis tirisan',
+  'wadah bumbu sekat toples bumbu kaca sendok',
+  'kotak telur organizer kulkas roll gravitasi',
+  'dispenser sabun cuci piring sponge pump otomatis',
+  'tempat spons cuci piring gantung kran wastafel',
+  'wadah saringan tirisan minyak gorengan stainless',
+  'botol kecap minyak kaca otomatis buka tutup',
+  'gantungan alat masak dinding putar 360 serbaguna',
+  'rak bumbu meja 2 tingkat mini portable compact',
+  'klip penjepit bungkus snack kedap udara rapat',
+  'tikar pengering piring silikon dish drying mat',
+
+  // =========================================================================
+  // 4. PERLENGKAPAN DAPUR & PERLENGKAPAN MEMASAK LAINNYA (Kitchen Supplies & Tools)
+  // =========================================================================
+  'penjepit kantong plastik makanan sealer clip praktis',
+  'tutup panci silikon anti tumpah boil over safeguard',
+  'wadah tirisan sayur buah kulkas drainer serbaguna',
+  'kantong silikon penyimpan makanan ziplock reusable',
+  'corong tuang minyak bumbu stainless saringan mini',
+  'penutup mangkok silikon elastis tahan panas microwave',
+  'jepitan piring mangkok panas stainless silikon gripper',
+  'tatakan panci silikon sarang lebah anti panas meja',
+  'splash guard kompor pelindung cipratan minyak lipat',
+  'pematik api elektrik usb kompor gas tanpa gas',
+  'termometer minyak daging digital probe lcd dapur',
+  'timer dapur digital magnetik pengingat waktu masak',
+  'sendok takar digital timbangan bumbu lcd presisi',
+  'sendok takar bumbu stainless magnetik set komplit',
+  'silikon pot air fryer tahan panas anti lengket loyang',
+  'kertas minyak alas air fryer baking paper bulat',
+  'cetakan es batu silikon pencet lepas mudah',
+  'pembuat dumpling pastel pastelan manual praktis cetakan',
+  'sutil spatula silikon set spatula kuas kocokan',
+  'capitan makanan capitan kue silikon jepit makanan',
+  'gunting serbaguna dapur potong tulang ayam daging sk5',
+  'alat pemotong kentang sayur spiral tornado fries',
+  'parutan keju coklat putar rotary stainless steel',
+  'alat pemeras santan kelapa perasan manual praktis',
+  'sendok scoop es krim trigger release stainless',
+
+  // =========================================================================
+  // 5. ALAT KEBERSIHAN KHUSUS WASTAFEL & DAPUR MINI (Kitchen Cleaning Tools)
+  // =========================================================================
   'dispenser sabun cuci piring otomatis sponge pump',
-  'alat pel lantai semprot spray mop praktis',
-  'alat pel peras putar otomatis serbaguna',
-  'alat pel mini meja spons portable praktis',
-  'sikat pembersih celah jendela pintu praktis',
-  'kemoceng microfiber fleksibel panjang tarik',
-  'sikat pembersih botol tumbler sedotan set',
-  'alat pengeruk pembersih kaca jendela wiper karet',
-  'sikat kloset silikon tempel dinding praktis',
-  'alat pengeruk pembersih bulu lint roller washable',
   'spons cuci piring nano magic sponge pembersih kerak',
   'sikat cuci piring dispenser sabun cair otomatis',
-  'alat pembersih saluran wastafel mampet fleksibel',
-  'sikat pembersih keyboard earphone multifungsi',
-  'sikat cuci sepatu otomatis multifungsi praktis',
-  'lap microfiber cuci piring serap air tebal',
-  'alat pembersih debu kolong kasur fleksibel panjang',
-  'sikat pembersih celah ubin keramik kawat baja',
-  'alat penyedot debu mini vacuum meja usb',
-  'pembersih bulu hewan baju karpet lint remover',
-  'sikat pembersih kawat sarang nyamuk jendela',
-  'alat pel lantai mikrofiber jepit otomatis peras',
-  'sikat pembersih dispenser galon air elektrik',
   'spons kawat cuci piring sabut stainless anti gores',
   'kain lap nano berserat pembersih minyak dapur',
   'alat pembersih kerak wajan panci serbaguna',
-  'pembersih jamur kaca jendela kamar mandi',
-  'sikat sudut kamar mandi bentuk segitiga putar',
-  'penghisap debu wireless vacuum cleaner portable',
-  'pembersih lantai robot otomatis sweep vacuum',
+  'sikat pembersih botol tumbler sedotan set',
   'sikat pembersih blender mata pisau dapur',
-  'wiper pembersih lantai silikon pengeruk air',
-  'sikat pembersih rantai motor sepeda multifungsi',
-  'alat semprot cuci mobil busa salju manual',
-
-  // =========================================================================
-  // 5. ORGANIZER & GADGET RUMAH TANGGA (Home Gadgets & Organizers)
-  // =========================================================================
-  'gantungan tempel dinding serbaguna kait transparan',
-  'organizer kabel klip meja dinding rapi',
-  'kotak organizer kabel colokan anti debu',
-  'lampu sensor gerak otomatis led usb magnetik',
-  'pompa galon elektrik usb otomatis praktis',
-  'humidifier mini diffuser aroma ruangan usb',
-  'gantungan sapu pel tempel dinding kuat',
-  'dispenser odol pasta gigi otomatis tempel dinding',
-  'rak gantung sabun kamar mandi tempel sudut',
-  'organizer pakaian dalam kaos kaki bersekat',
-  'gantungan baju lipat travel hemat tempat',
-  'tali jemuran baju portable anti angin praktis',
-  'pelindung sudut meja silikon pengaman bayi',
-  'penahan pintu silikon magnetik anti bentur',
-  'stiker pelindung wastafel anti air jamur',
-  'tutup saringan lubang pembuangan silikon',
-  'rak sepatu lipat susun portable praktis',
-  'timbangan badan digital mini led akurat',
-  'kantong vakum pakaian kompres hemat lemari',
-  'kotak penyimpanan selimut baju serbaguna zipper',
-  'gantungan baju ajaib 9 lubang magic hanger',
-  'lampu tidur proyektor bintang galaksi led',
-  'rak gantung celana jins 5 tingkat hemat tempat',
-  'lampu meja belajar led lipat touch sensor',
-  'gantungan tas jilbab lemari susun hanger',
-  'penjepit sprei kasur elastis anti geser lepas',
-  'stop kontak putar anti petir usb fast charge',
-  'kotak obat p3k mini organizer susun sekat',
-  'tempat sampah pintar sensor gerak otomatis',
-  'rak gantung pintu organizer sepatu serbaguna',
-  'diffuser lilin elektrik aroma terapi ruangan',
-  'penjepit kantong sampah gantungan wastafel',
-  'gembok koper kombinasi angka tsa anti maling',
-  'perangkap nyamuk elektrik led uv suction',
-  'rak susun meja kantor atk organizer laci',
-  'kotak tisu serbaguna holder handphone meja',
-  'jam weker digital led temperatur suhu meja',
-  'rak pajangan dinding heksagonal minimalis',
-  'gantungan kunci tempel magnetik dinding estetik',
-  'pengganjal pintu karet silikon stopper lantai',
-
-  // =========================================================================
-  // 6. KAMAR MANDI, SANITASI & LAUNDRY (Bathroom & Laundry Gadgets)
-  // =========================================================================
-  'keset kaki diatomite menyerap air cepat kering',
-  'kepala shower turbo propeller hemat air bertekanan',
-  'dispenser sabun cair otomatis sensor sentuh',
-  'gantungan handuk tempel dinding lipat stainless',
-  'tempat sikat gigi sterilizer uv anti bakteri',
-  'tutup saluran floor drain anti bau dan serangga',
-  'spons mandi pengangkat sel kulit mati daki',
-  'pemberat tirai kamar mandi magnetik anti air',
-  'gantungan shower head tempel dinding adjustable',
-  'tempat sabun batang tirisan bentuk daun unik',
-  'kantong cuci baju jaring mesin cuci bra laundry net',
-  'jepitan jemuran baju stainless steel anti karat',
-  'sikat punggung mandi silikon gagang panjang',
-  'papan gilasan baju silikon mini wastafel',
-  'rak gantung pengering sepatu gantungan balkon',
-  'sarung tangan cuci piring silikon bergerigi',
-  'dispenser plastik pembungkus sepatu otomatis',
-  'alat pencuci kuas makeup elektrik cleaner dryer',
-  'rak gantung pengering pakaian jemuran lipat dinding',
-  'penyaring rambut kotoran mesin cuci laundry filter',
-
-  // =========================================================================
-  // 7. GADGET MEJA KERJA, ELEKTRONIK & GAYA HIDUP (Desk, Tech & Lifestyle)
-  // =========================================================================
-  'stand holder handphone lipat meja aluminium',
-  'stand laptop portable lipat pendingin aluminium',
-  'kipas angin mini portable leher neck fan usb',
-  'kipas angin meja portable baterai rechargeable',
-  'mouse pad extended meja kerja kulit pu anti air',
-  'lampu led strip rgb kamar tv usb sensor suara',
-  'alat pembersih layar handphone semprot microfiber',
-  'kabel data 3 in 1 magnetik fast charging',
-  'holder handphone mobil magnetik ac dashboard',
-  'vacuum cleaner mobil wireless portable mini',
-  'tempat sampah mini mobil cup holder praktis',
-  'charger mobil fast charging usb type c led',
-  'alat pijat leher pundak elektrik ems massage',
-  'alat pijat mata elektrik kompres hangat relaksasi',
-  'gunting kuku elektrik bayi dewasa aman otomatis',
-  'alat cukur bulu hidung telinga elektrik portable',
-  'alat pembersih komedo pori wajah vakum cleaner',
-  'face roller guasha pijat wajah elektrik getar',
-  'catokan rambut mini portable travel anti rusak',
-  'pelipat baju praktis lipat pakaian instan',
-  'botol minum motivasi 2 liter penanda waktu',
-  'payung lipat otomatis buka tutup tombol anti uv',
-  'bantal leher memory foam travel portable empuk',
-  'timbangan koper digital gantung mini praktis',
-  'kacamata anti radiasi sinar biru blueray komputer',
-  'alat pengering sepatu elektrik timer otomatis',
-  'pelindung kabel charger spiral silikon kartun',
-  'pouch kabel organizer travel waterproof gadget bag',
-  'ring light mini selfie clip on handphone led',
-  'mikrofon wireless clip on type c podcast rekaman',
-
-  // =========================================================================
-  // 8. ALAT PERTUKANGAN MINI & PERBAIKAN RUMAH (Mini Tools & DIY)
-  // =========================================================================
-  'obeng elektrik mini set presisi rechargeable usb',
-  'meteran laser digital ukur jarak presisi portable',
-  'lem perekat serbaguna super glue serbaguna kuat',
-  'lakban tambal bocor atap pipa anti air aluminium',
-  'stiker tambal kasur sofa kulit jok mobil sofa patch',
-  'alat pelubang sabuk kulit ikat pinggang putar',
-  'palu mini serbaguna multifungsi multi tools',
-  'tang lipat multifungsi stainless pisau obeng camping',
-  'lem bakar tembak glue gun mini praktis diy',
-  'klem penjepit sudut siku kayu 90 derajat diy',
-  'alat pengangkat barang berat perabot roda ganjal',
-  'lakban nano bening double tape serbaguna kuat cuci',
-  'senter led super terang usb rechargeable zoom',
-  'gantungan kunci perkakas 18 in 1 snowflake tool',
-  'gergaji tangan lipat serbaguna kayu dahan pohon',
-  'kunci pas universal multifungsi serbaguna baut',
-  'alat pendeteksi kabel dinding wall scanner led',
-  'karet pelindung kaki meja kursi silikon peredam',
-  'stiker wallpaper dinding 3d bata busa foam kedap',
-  'alat semprot tanaman busa manual bertekanan'
+  'alat pembersih sisik ikan stainless dengan wadah',
+  'sikat pembersih celah kompor wastafel serbaguna',
+  'spons cuci piring jaring busa tebal higienis anti bau'
 ];
 
-/**
- * Returns a randomized, expansive array of 1000+ unique product keywords
- * by combining our curated base keywords with high-intent e-commerce product modifiers.
- */
-export function getAutoKeywords(limit = 1000) {
-  const combinedSet = new Set(DEFAULT_AUTO_KEYWORDS);
+export const TOOL_INDICATORS = [
+  'alat', 'cetakan', 'wadah', 'saringan', 'pembuat', 'parutan',
+  'pisau', 'gunting', 'wajan', 'panci', 'spatula', 'sutil', 'capitan',
+  'timbangan', 'termometer', 'dispenser', 'sealer', 'pengupas', 'peeler',
+  'slicer', 'chopper', 'blender', 'grater', 'organizer', 'tempat bumbu', 'rak bumbu meja',
+  'penjepit', 'tatakan', 'kuas silikon', 'frother', 'whisk', 'rolling pin', 'loyang',
+  'serutan', 'pemeras', 'pelumat', 'perajang', 'sikat', 'spons', 'kain lap',
+  'tudung saji', 'sarung tangan oven', 'pematik', 'splash guard', 'masher',
+  'ricer', 'timer dapur', 'sendok takar', 'sendok ukur', 'centong', 'irus', 'corong',
+  'tirisan', 'pencacah', 'pengocok', 'pengiris', 'pemipil', 'pengasah', 'batu asah',
+  'pan', 'pot', 'steamer', 'toaster', 'waffle maker', 'botol minyak', 'botol bumbu',
+  'botol semprot', 'botol spray', 'botol saus', 'botol kecap', 'squeeze bottle',
+  'grinder', 'french press', 'coffee maker', 'teko', 'drain bowl', 'drying mat'
+];
 
-  const productNouns = [
-    'chopper', 'blender', 'parutan', 'slicer', 'pisau', 'gunting', 'pengupas',
-    'botol minyak', 'rak bumbu', 'dispenser beras', 'kotak telur', 'sealer plastik',
-    'wajan mini', 'panci listrik', 'sutil silikon', 'timbangan digital', 'cetakan es',
-    'sikat elektrik', 'dispenser sabun', 'spray mop', 'pel putar', 'pel mini',
-    'kemoceng microfiber', 'sikat botol', 'wiper kaca', 'sikat kloset', 'lint roller',
-    'magic sponge', 'pembersih wastafel', 'lampu sensor', 'pompa galon', 'humidifier',
-    'dispenser odol', 'organizer pakaian', 'gantungan baju', 'rak sepatu', 'vacuum cleaner',
-    'stand hp', 'stand laptop', 'kipas mini', 'alat pijat', 'catokan mini', 'botol minum',
-    'payung lipat', 'bantal leher', 'obeng elektrik', 'lem serbaguna', 'lakban nano',
-    'shower turbo', 'sikat punggung mandi', 'tutup saluran silikon', 'lampu tidur proyektor',
-    'alat pembuat dumpling', 'pemeras jeruk lemon', 'pemotong kentang spiral', 'cetakan bakso',
-    'alat pengasah pisau', 'termometer makanan', 'frother pengocok susu', 'silikon air fryer',
-    'kotak organizer kabel', 'stop kontak usb', 'jam weker digital', 'keset diatomite',
-    'alat pembersih komedo', 'gunting kuku elektrik', 'alat pengering sepatu', 'meteran laser'
-  ];
+export const FOOD_DRINK_EXCLUDE_WORDS = [
+  // Resep, tutorial masak, kuliner & mukbang (bukan demonstrasi alat dapur)
+  'resep', 'recipe', 'cara membuat', 'cara memasak', 'menu masakan', 'masakan rumahan',
+  'kuliner', 'culinary', 'mukbang', 'asmr makan', 'asmr eating', 'food review',
+  'drink review', 'jajanan', 'street food', 'warung makan', 'restoran', 'cafe',
+  'makan siang', 'makan malam', 'sarapan enak', 'kuliner viral', 'cemilan viral',
 
-  const modifiers = [
-    'mini portable viral',
-    'multifungsi serbaguna',
-    'praktis anti tumpah',
-    'otomatis rechargeable usb',
-    'stainless anti karat',
-    'silikon food grade',
-    'tempel dinding tanpa paku',
-    'lipat hemat tempat',
-    'hemat listrik estetik',
-    'rekomendasi racun shopee',
-    'kualitas premium awet',
-    'unik berfaedah murah',
-    'praktis untuk dapur',
-    'solusi rumah tangga rapi',
-    'review produk viral tiktok',
-    'alat rumah tangga modern'
-  ];
+  // Minuman & Minuman Olahan (Beverages)
+  'minuman', 'beverage', 'drink', 'minuman kemasan', 'minuman sachet', 'minuman botol',
+  'boba', 'bubble tea', 'milk tea', 'thai tea', 'matcha latte', 'matcha tea',
+  'kopi bubuk', 'kopi sachet', 'kopi luwak', 'kopi hitam', 'kopi susu', 'kopi gula aren', 'espresso',
+  'biji kopi', 'coffee bean', 'cold brew', 'cappuccino sachet',
+  'susu sapi', 'susu uht', 'susu formula', 'susu kental manis', 'susu evaporasi', 'susu kedelai',
+  'sirup', 'syrup', 'teh celup', 'teh tubruk', 'teh kotak', 'teh botol', 'jus buah',
+  'minuman bersoda', 'soft drink', 'minuman isotonik', 'minuman energi', 'minuman collagen',
+  'minuman herbal', 'jamu', 'jamu tradisional', 'bir', 'beer', 'alkohol', 'wine',
 
-  for (const noun of productNouns) {
-    for (const mod of modifiers) {
-      combinedSet.add(`${noun} ${mod}`);
-      if (combinedSet.size >= limit) break;
+  // Makanan Ringan, Snack & Camilan
+  'makanan ringan', 'snack', 'camilan', 'cemilan', 'keripik', 'kerupuk', 'kripik',
+  'basreng', 'seblak', 'makaroni pedas', 'biskuit', 'wafer', 'cokelat', 'chocolate',
+  'permen', 'candy', 'kue kering toples', 'nastar toples', 'kastengel', 'kue basah',
+  'roti tawar', 'roti sobek', 'donat manis', 'martabak manis', 'brownies', 'bolu panggang',
+  'puding cup', 'dessert box', 'popcorn',
+
+  // Makanan Instan, Olahan & Frozen Food
+  'makanan instan', 'mie instan', 'indomie', 'sedap goreng', 'ramen instan', 'samyang',
+  'frozen food', 'nugget ayam', 'sosis sapi', 'sosis bakar', 'bakso sapi kemasan',
+  'siomay beku', 'dimsum frozen', 'pempek palembang', 'cireng bumbu rujak', 'cilok',
+  'rendang siap saji', 'sambal kemasan', 'sambal sachet', 'bumbu instan', 'bumbu racik',
+
+  // Bahan Pangan Mentah Tanpa Konteks Alat
+  'daging sapi 1kg', 'daging ayam segar', 'daging fillet', 'daging slice beef',
+  'ikan segar', 'udang vaname', 'cumi asin', 'kepiting laut', 'telur ayam 1kg',
+  'beras ramos', 'beras pandan wangi', 'beras merah 5kg', 'tepung terigu segitiga',
+  'tepung tapioka 1kg', 'tepung beras rose brand', 'gula pasir gulaku', 'garam dapur beryodium',
+  'minyak goreng 2l', 'minyak goreng sania', 'minyak goreng filma', 'minyak goreng bimoli'
+];
+
+export function isFoodOrBeverageProduct(text = '') {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+
+  // 1. Direct match on food/drink exclude list
+  if (FOOD_DRINK_EXCLUDE_WORDS.some((word) => normalized.includes(word))) {
+    // If it contains a pure recipe/mukbang/beverage/snack term, always exclude
+    if (/\b(?:resep|recipe|mukbang|asmr makan|asmr eating|kuliner|street food|food review|drink review|camilan|cemilan|minuman kemasan|boba milk tea|frozen food|mie instan|kopi susu|kopi gula aren)\b/i.test(normalized)) {
+      // Unless it explicitly mentions a recognized appliance/prep tool (frother, blender, grinder, mixer, teko, saringan teh)
+      if (!/\b(?:frother|pengocok\s+susu|milk\s+frother|grinder|penggiling|french\s+press|teko|infuser|blender|saringan\s+teh)\b/i.test(normalized)) {
+        return true;
+      }
     }
-    if (combinedSet.size >= limit) break;
+
+    // If it has a clear physical tool/utensil indicator, allowed (e.g. cetakan bakso, parutan keju, botol minyak kuas)
+    const hasTool = TOOL_INDICATORS.some((tool) => normalized.includes(tool));
+    if (!hasTool) {
+      return true;
+    }
   }
 
-  const allKeywords = Array.from(combinedSet);
-  // Shuffle array thoroughly
-  for (let i = allKeywords.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allKeywords[i], allKeywords[j]] = [allKeywords[j], allKeywords[i]];
+  // 2. Pure food/drink keywords without physical tool indicator
+  if (/\b(?:makanan|minuman|snack|camilan|cemilan|boba|kopi|teh|susu|sirup|jus|keripik|biskuit|cokelat|nugget|sosis|bakso|siomay|dimsum|seblak|basreng)\b/i.test(normalized)) {
+    const hasTool = TOOL_INDICATORS.some((tool) => normalized.includes(tool));
+    if (!hasTool) {
+      return true;
+    }
   }
 
-  return allKeywords.slice(0, limit);
+  return false;
 }
 
 export const BULKY_EXCLUDE_WORDS = [
+  // Lemari, kabinet, kitchen set & furniture besar
   'lemari',
   'wardrobe',
+  'kabinet',
+  'cabinet',
+  'kitchen set',
+  'kitchen island',
+  'buffet',
+  'etalase',
+  'sideboard',
+  'credensa',
   'kulkas',
   'refrigerator',
+  'freezer',
   'kasur',
   'springbed',
   'spring bed',
@@ -377,63 +342,832 @@ export const BULKY_EXCLUDE_WORDS = [
   'meja kantor',
   'meja tamu',
   'meja tv',
+  'meja bar',
+  'island table',
+  'meja kasir',
   'sofa',
   'dipan',
   'ranjang',
+  'kursi',
   'kursi gaming',
   'kursi kantor',
   'kursi roda',
+  'kursi makan',
   'mesin cuci',
   'washing machine',
-  'ac portable besar',
+  'ac portable',
   'tv cabinet',
-  'buffet',
-  'etalase',
-  'rak lemari jumbo',
-  'rak besi besar',
-  'kitchen set besar',
-  'kitchen set custom',
-  'furniture besar',
+  'furniture',
+  'perabot besar',
+
+  // Rak besar, rak piring bertingkat, & organizer jumbo yang memenuhi frame
+  'rak besar',
+  'rak jumbo',
+  'rak besi',
+  'rak piring',
+  'dish rack',
+  'dish drainer',
+  'rak susun',
+  'rak bertingkat',
+  'rak tingkat',
+  'rak wastafel',
+  'rak sink',
+  'rak lemari',
+  'rak sudut',
+  'standing rack',
+  'rak standing',
+  'rak troli',
+  'troli dapur',
+  'trolley',
+  'rak roda',
+  'rak dinding',
+  'rak gantung piring',
+  'rak bumbu susun',
+  'rak bumbu tingkat',
+  'rak bawah wastafel',
+  'rak dapur susun',
+  'rak dapur besar',
+  'drying rack',
+
+  // Kompor & oven besar
+  'kompor tanam',
+  'kompor gas 2 tungku',
+  'kompor gas kaca',
+  'kompor standing',
+  'oven besar',
+  'standing stove',
+  'cooker hood',
+  'exhaust fan',
+  'dispenser galon bawah',
+  'standing dispenser',
+
+  // Kategori non-dapur (kebersihan umum rumah, pakaian, kamar mandi, lifestyle, pertukangan)
+  'rak sepatu',
+  'rak buku',
+  'rak baju',
+  'gantungan baju',
+  'jemuran',
+  'shower',
+  'kloset',
+  'toilet',
+  'keset',
+  'spray mop',
+  'pel lantai',
+  'pel peras',
+  'pel putar',
+  'vacuum cleaner',
+  'kemoceng',
+  'obeng',
+  'tang lipat',
+  'holder hp',
+  'stand laptop',
+  'catokan',
+  'alat pijat',
+  'lampu tidur',
+
+  // Pemanggang besar / Outdoor Grills / Commercial BBQ (Blackstone dsb)
+  'blackstone',
+  'weber',
+  'smoker',
+  'barbecue',
+  'bbq outdoor',
+  'grill outdoor',
+  'pemanggang besar',
+  'panggangan besar',
+  'panggangan standing',
+  'griddle outdoor',
+  'commercial grill',
+
+  // Pabrik / Industri / Proses Pembuatan
+  'pabrik',
+  'manufacturing',
+  'factory',
+  'proses pembuatan',
+  'industri',
+  'produksi masal',
+
+  // Pertanian / Peternakan / Mesin Berat / Penggilingan
+  'pakan ternak',
+  'mesin ternak',
+  'mesin selep',
+  'pemipil jagung',
+  'perontok',
+  'pemanen',
+  'traktor',
+  'mesin pencacah',
+  'chopper multifungsi',
+  'giling janggel',
+  'silase'
 ];
 
 export function isBulkyOrUnsuitableProduct(text = '') {
   const normalized = normalizeText(text);
-  return BULKY_EXCLUDE_WORDS.some((word) => normalized.includes(word));
+  if (!normalized) return false;
+
+  // 1. Food or drink exclusion check
+  if (isFoodOrBeverageProduct(normalized)) {
+    return true;
+  }
+
+  // 1B. Disqualify 'cara', 'tutorial', 'DIY', 'how to', 'do it yourself'
+  if (/\b(?:cara|tutorial|diy|how\s+to|do\s+it\s+yourself)\b/i.test(normalized)) {
+    return true;
+  }
+
+  // 1C. Factory / manufacturing / industrial process / bulky grills / agricultural machinery
+  if (/\b(?:blackstone|weber|smoker|barbecue|bbq|pabrik|factory|manufacturing|industri|pembuatan|ternak|pakan|limbah|selep|pemipil|perontok|pemanen|traktor|chopper|choper|cacah|silase|janggel)\b/i.test(normalized)) {
+    return true;
+  }
+
+  // 2. Direct match on exclude list
+  if (BULKY_EXCLUDE_WORDS.some((word) => normalized.includes(word))) {
+    return true;
+  }
+
+  // 3. Any combination of "rak" with frame-filling descriptors
+  if (/\brak\b/.test(normalized) && /(?:besar|jumbo|susun|tingkat|piring|wastafel|dapur|besi|standing|troli|roda|tinggi|dinding|gantung)/.test(normalized)) {
+    return true;
+  }
+
+  // 4. Furniture or cabinet indicators
+  if (/\b(?:lemari|kabinet|cabinet|furniture|wardrobe|kitchen\s+set|meja\s+makan|kursi)\b/.test(normalized)) {
+    return true;
+  }
+
+  return false;
+}
+
+// ─── PERSISTENT USED KEYWORDS & ANTI-DUPLICATION STORE ─────────────────────────
+
+export function normalizeKeyword(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Loads used keywords from disk and auto-syncs with existing jobs.json
+ * to guarantee that any product or keyword ever processed previously
+ * is automatically excluded and never repeated.
+ */
+export function loadUsedKeywords() {
+  let store = {
+    keywords: {},
+    productTitles: {},
+    lastUpdated: null
+  };
+
+  try {
+    if (fs.existsSync(USED_KEYWORDS_FILE)) {
+      const raw = fs.readFileSync(USED_KEYWORDS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      store = {
+        keywords: parsed.keywords || {},
+        productTitles: parsed.productTitles || {},
+        lastUpdated: parsed.lastUpdated || null
+      };
+    }
+  } catch (err) {
+    console.warn('[Discovery] Failed to read used_keywords.json, initializing new store:', err.message);
+  }
+
+  // Backfill from jobs.json if available so historical jobs are never re-generated
+  let dirty = false;
+  try {
+    if (fs.existsSync(JOBS_FILE)) {
+      const rawJobs = fs.readFileSync(JOBS_FILE, 'utf-8');
+      const jobsObj = JSON.parse(rawJobs);
+      for (const [jobId, jobData] of Object.entries(jobsObj)) {
+        if (!jobData) continue;
+        if (jobData.keyword) {
+          const normK = normalizeKeyword(jobData.keyword);
+          if (normK && !store.keywords[normK]) {
+            store.keywords[normK] = {
+              usedAt: Date.parse(jobData.createdAt) || Date.now(),
+              dateStr: jobData.createdAt || new Date().toISOString(),
+              productTitle: jobData.productTitle || null,
+              jobId,
+              source: 'jobs.json'
+            };
+            dirty = true;
+          }
+        }
+        if (jobData.productTitle) {
+          const normT = normalizeKeyword(jobData.productTitle);
+          if (normT && !store.productTitles[normT]) {
+            store.productTitles[normT] = {
+              usedAt: Date.parse(jobData.createdAt) || Date.now(),
+              dateStr: jobData.createdAt || new Date().toISOString(),
+              jobId,
+              source: 'jobs.json'
+            };
+            dirty = true;
+          }
+        }
+        if (jobData.cleanProductTitle) {
+          const normC = normalizeKeyword(jobData.cleanProductTitle);
+          if (normC && !store.productTitles[normC]) {
+            store.productTitles[normC] = {
+              usedAt: Date.parse(jobData.createdAt) || Date.now(),
+              dateStr: jobData.createdAt || new Date().toISOString(),
+              jobId,
+              source: 'jobs.json'
+            };
+            dirty = true;
+          }
+        }
+        if (jobData.coreProductNoun) {
+          const normN = normalizeKeyword(jobData.coreProductNoun);
+          if (normN && !store.keywords[normN]) {
+            store.keywords[normN] = {
+              usedAt: Date.parse(jobData.createdAt) || Date.now(),
+              dateStr: jobData.createdAt || new Date().toISOString(),
+              jobId,
+              source: 'jobs.json'
+            };
+            dirty = true;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Non-fatal if jobs.json doesn't exist or is empty
+  }
+
+  if (dirty) {
+    store.lastUpdated = new Date().toISOString();
+    saveUsedKeywords(store);
+  }
+
+  return store;
+}
+
+export function saveUsedKeywords(store) {
+  try {
+    fs.writeFileSync(USED_KEYWORDS_FILE, JSON.stringify(store, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[Discovery] Failed to write used_keywords.json:', err.message);
+  }
+}
+
+/**
+ * Marks a keyword and associated product title as used so it will never be generated again.
+ */
+export function markKeywordAsUsed(keyword, meta = {}) {
+  const norm = normalizeKeyword(keyword);
+  if (!norm) return;
+  const store = loadUsedKeywords();
+  store.keywords[norm] = {
+    usedAt: Date.now(),
+    dateStr: new Date().toISOString(),
+    productTitle: meta.productTitle || null,
+    jobId: meta.jobId || null,
+    source: meta.source || 'system'
+  };
+  if (meta.productTitle) {
+    const normTitle = normalizeKeyword(meta.productTitle);
+    if (normTitle) {
+      store.productTitles[normTitle] = {
+        usedAt: Date.now(),
+        dateStr: new Date().toISOString(),
+        jobId: meta.jobId || null
+      };
+    }
+  }
+  store.lastUpdated = new Date().toISOString();
+  saveUsedKeywords(store);
+}
+
+/**
+ * Returns true if a keyword has been used before in history.
+ */
+export function isKeywordUsed(keyword) {
+  const norm = normalizeKeyword(keyword);
+  if (!norm) return false;
+  const store = loadUsedKeywords();
+  if (store.keywords && store.keywords[norm]) return true;
+  if (store.productTitles && store.productTitles[norm]) return true;
+  return false;
+}
+
+/**
+ * Returns true if a product title was already used, including prefix match to prevent duplicate listings.
+ */
+export function isProductTitleUsed(title) {
+  const norm = normalizeKeyword(title);
+  if (!norm) return false;
+  const store = loadUsedKeywords();
+  if (store.productTitles && store.productTitles[norm]) return true;
+  if (store.keywords && store.keywords[norm]) return true;
+
+  // Check if first 5 significant words match an existing title
+  const words = norm.split(' ').filter((w) => w.length > 2).slice(0, 5).join(' ');
+  if (words.length >= 10) {
+    for (const stored of Object.keys(store.productTitles || {})) {
+      if (stored.includes(words)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns stats on processed keywords and recent history.
+ */
+export function getUsedKeywordsStats() {
+  const store = loadUsedKeywords();
+  const keywordCount = Object.keys(store.keywords || {}).length;
+  const titleCount = Object.keys(store.productTitles || {}).length;
+  const recentKeywords = Object.entries(store.keywords || {})
+    .sort((a, b) => (b[1].usedAt || 0) - (a[1].usedAt || 0))
+    .slice(0, 10)
+    .map(([k, v]) => ({ keyword: k, usedAt: v.dateStr, productTitle: v.productTitle }));
+
+  return {
+    totalUsedKeywords: keywordCount,
+    totalUsedTitles: titleCount,
+    lastUpdated: store.lastUpdated,
+    recentKeywords
+  };
+}
+
+/**
+ * Resets the used keywords database.
+ */
+export function clearUsedKeywords() {
+  const store = { keywords: {}, productTitles: {}, lastUpdated: new Date().toISOString() };
+  saveUsedKeywords(store);
+  return store;
+}
+
+// ─── COMBINATORIAL KITCHEN KEYWORDS GENERATOR ─────────────────────────────────
+// Curated exclusively for compact, tabletop kitchen gadgets & tools (100% kitchen tools, 0% bulky furniture/racks)
+
+export const KITCHEN_CORE_TOOLS = [
+  // ── 1. ALAT DAPUR, PEMOTONG & FOOD PREP (Kitchen Tools & Cutters) ──
+  'chopper mini manual tarik',
+  'chopper mini elektrik portable',
+  'food chopper blender mini',
+  'blender kapsul mini portable',
+  'mandoline slicer parutan multifungsi',
+  'parutan multifungsi baskom wadah',
+  'parutan keju kelapa stainless',
+  'parutan sayur wortel kentang',
+  'alat pemotong sayur serbaguna',
+  'alat pemotong bawang cabai mini',
+  'alat perajang bawang manual putar',
+  'alat pengiris daging beku slicer',
+  'alat pengiris mentega keju butter',
+  'alat pemotong kentang spiral tornado',
+  'alat pemotong kentang french fries',
+  'alat pemotong semangka melon praktis',
+  'alat pemotong alpukat 3 in 1',
+  'alat pemotong nanas spiral corer',
+  'alat pemotong pizza roda stainless',
+  'alat serut jagung pipil stainless',
+  'alat pemipil jagung serbaguna praktis',
+  'alat pengiris telur rebus stainless',
+  'alat pemecah cangkang kepiting walnut',
+  'sendok pembuat bakso bakwan anti lengket',
+  'cetakan bakso manual serbaguna',
+  'alat pencetak burger patty press manual',
+  'alat pengupas buah sayur peeler praktis',
+  'alat pengupas kulit udang praktis',
+  'alat pembuang biji apel pir praktis',
+  'alat pelumat kentang potato masher',
+  'alat peremas kentang stainless potato ricer',
+  'alat pelumat bawang putih garlic press',
+  'pemeras bawang putih rocker stainless',
+  'alat pemeras jeruk lemon manual stainless',
+  'alat pemeras jeruk nipis manual',
+  'alat pemeras santan kelapa manual mini',
+  'alat pemisah kuning telur praktis',
+  'alat penusuk daging tenderizer empuk',
+  'sendok porsi es krim scoop trigger',
+  'alat pelubang kelapa muda stainless',
+  'pisau dapur stainless tajam chef knife',
+  'pisau kupas buah sayur mini cover',
+  'pisau roti kue gerigi stainless',
+  'pisau daging mini cleaver dapur',
+  'gunting dapur serbaguna stainless sk5',
+  'gunting daging tulang unggas heavy duty',
+  'gunting sayur daun bawang 5 lapis',
+  'alat pengasah pisau praktis 3 tahap',
+  'batu asah pisau dapur grit halus',
+  'alat pembuka kaleng putar praktis aman',
+  'alat pembuka tutup botol toples serbaguna',
+  'alat pencabut bulu ayam ikan stainless',
+  'alat pemotong keju kawat stainless',
+  'parutan keju putar rotary cheese grater',
+  'pengupas kulit jeruk lemon zester stainless',
+  'alat perajang rempah daun stainless herb cutter',
+  'alat pengocok telur semi otomatis putar tekan',
+  'alat pelindung jari iris sayur stainless',
+
+  // ── 2. PERABOTAN DAPUR (TABLETOP, RAK BUMBU & ORGANIZER MEJA KOMPAK) ──
+  'tempat bumbu putar 360 derajat meja',
+  'wadah bumbu dapur 4 sekat praktis sendok',
+  'kotak bumbu dapur putar serbaguna',
+  'tempat sendok garpu tirisan mini tertutup',
+  'tempat sendok tirisan meja anti debu',
+  'tempat pisau dapur magnetic strip dinding',
+  'tempat pisau blok dapur minimalis tirisan',
+  'toples kaca kedap udara tutup bambu estetik',
+  'wadah bumbu kaca sendok label terintegrasi',
+  'dispenser beras mini otomatis anti kutu',
+  'kotak telur organizer kulkas roll otomatis',
+  'kotak telur bertingkat otomatis slide kulkas',
+  'tatakan tutup panci sutil meja silikon',
+  'rak bumbu meja 2 tingkat mini portable',
+  'rak bumbu putar putaran halus meja',
+  'gantungan alat masak dinding putar 360',
+  'tempat spons tirisan kran wastafel praktis',
+  'wadah kotak penyimpanan bawang cabai kulkas',
+  'organizer bumbu sachet mini gantung kulkas',
+  'kotak penyimpanan kulkas sekat drain basket',
+  'dispenser sabun cuci piring sponge pump',
+
+  // ── 3. PERLENGKAPAN DAPUR & FOOD PREPARATION (Kitchen Supplies & Storage) ──
+  'botol minyak kuas silikon 2 in 1 anti tumpah',
+  'botol semprot spray minyak goreng olive oil',
+  'botol minyak goreng kaca otomatis buka tuang',
+  'botol saus kecap squeeze bottle plastik lentur',
+  'alat sealer plastik mini portable heat sealer',
+  'klip penjepit bungkus makanan snack kedap udara',
+  'penutup makanan silikon stretch elastis reusable',
+  'penutup makanan payung tudung saji lipat',
+  'wadah tirisan cuci beras sayur drain bowl',
+  'baskom pencuci beras buah tirisan putar 2 in 1',
+  'wadah saringan tirisan minyak jelantah stainless',
+  'corong lipat silikon minyak air serbaguna',
+  'corong tuang minyak bumbu stainless saringan',
+  'kantong silikon penyimpan makanan ziplock reusable',
+  'penutup mangkok silikon elastis anti tumpah',
+  'jepitan kantong plastik makanan sealer clip',
+  'tutup panci silikon anti tumpah boil over safeguard',
+  'wadah tirisan sayur buah kulkas drainer',
+  'saringan teh kopi stainless reusable infuser',
+  'tikar pengering piring silikon dish drying mat',
+
+  // ── 4. PERLENGKAPAN MEMASAK, WAJAN & BAKING (Cookware, Baking & Cooking Tools) ──
+  'wajan penggorengan mini telur 4 lubang anti lengket',
+  'wajan tamagoyaki teflon kotak telur gulung',
+  'wajan grill pan mini anti lengket pemanggang',
+  'panci listrik mini serbaguna portable anak kost',
+  'panci kukus mini stainless serbaguna',
+  'panci rebus mie telur mini stainless gagang',
+  'pemanggang sandwich toaster mini lipat kompor',
+  'alat pembuat waffle mini elektrik praktis',
+  'alat pembuat crepes mini pan elektrik',
+  'cetakan martabak mini 7 lubang anti lengket',
+  'cetakan takoyaki mini anti lengket teflon',
+  'cetakan pukis mini teflon anti lengket',
+  'cetakan donat manual praktis adonan kue',
+  'cetakan pastel dumpling pangsit gyoza manual',
+  'cetakan sushi roll manual bazooka praktis',
+  'cetakan onigiri nasi bento segitiga praktis',
+  'cetakan kue kering biskuit cookies press set',
+  'pembuat churros cetakan kue semprit manual',
+  'sutil silikon set tahan panas food grade',
+  'spatula silikon tahan panas gagang kayu estetik',
+  'capitan makanan gorengan silikon stainless',
+  'capitan gorengan stainless dengan saringan tirisan',
+  'centong nasi silikon anti lengket berdiri',
+  'sendok kuah sup sayur silikon tahan panas',
+  'irus kuah sayur stainless gagang kayu anti panas',
+  'alas silikon adonan kue baking mat anti lengket',
+  'rolling pin silikon penggiling adonan kue pastry',
+  'kuas minyak silikon baking tahan panas',
+  'silikon pot air fryer reusable anti lengket',
+  'kertas baking parchment paper air fryer bulat',
+  'timer dapur digital magnetik masak baking',
+  'termometer makanan digital masak probe presisi',
+  'timbangan digital dapur mini presisi gram',
+  'sendok takar bumbu dapur set magnetic stainless',
+  'sendok takar digital timbangan bumbu lcd',
+  'saringan tepung ayakan stainless putar manual',
+  'whisk pengocok adonan telur manual stainless',
+  'frother pengocok susu kopi mini elektrik usb',
+  'splash guard pelindung cipratan minyak kompor',
+  'tatakan kompor gas pelindung api hemat gas',
+  'pematik api kompor gas elektrik usb recharge',
+  'sarung tangan oven silikon anti panas tebal',
+  'jepitan mangkok piring panas silikon stainless',
+  'alas tatakan panci wajan panas silikon meja',
+  'alat tusuk sate praktis pembuat sate cepat',
+  'penutup silikon microwave anti cipratan makanan',
+
+  // ── 5. PERLENGKAPAN KEBERSIHAN WASTAFEL & GADGET DAPUR TERKAIT ──
+  'spons cuci piring nano magic sponge pembersih kerak',
+  'spons sabut kawat stainless anti gores cuci piring',
+  'sikat cuci piring dispenser sabun otomatis',
+  'sikat pembersih botol tumbler sedotan set',
+  'sikat pembersih blender mata pisau dapur',
+  'kain lap microfiber nano berserat pembersih minyak',
+  'alat pembersih kerak wajan panci gosong',
+  'alat pembersih sisik ikan stainless dengan wadah',
+  'spons cuci piring jaring busa tebal higienis',
+  'sikat pembersih celah kompor wastafel serbaguna'
+];
+
+export const KITCHEN_VARIANTS = [
+  'mini portable praktis',
+  'multifungsi serbaguna',
+  'manual putar cepat',
+  'manual tarik praktis anti ribet',
+  'elektrik rechargeable usb',
+  'otomatis hemat waktu',
+  'stainless steel food grade 304',
+  'silikon food grade tahan panas anti leleh',
+  'teflon anti lengket mudah dibersihkan',
+  'ergonomis nyaman digenggam',
+  'tebal kokoh awet tahan lama',
+  'anti tumpah kedap udara rapat',
+  'praktis mudah dicuci higienis',
+  'estetik minimalis modern',
+  'model terbaru viral aesthetic',
+  '3 in 1 multifungsi praktis',
+  '4 in 1 serbaguna hemat ruang',
+  '5 in 1 serbaguna komplit',
+  '6 in 1 multifungsi komplit wadah',
+  'hemat tempat ringkas dapur sempit',
+  'compact gampang disimpan di laci',
+  'travel friendly ringkas mudah dibawa',
+  'mata pisau tajam presisi anti karat',
+  'aman digunakan food grade bpa free',
+  'bebas bpa bpa free higienis',
+  'hemat minyak goreng sehat',
+  'cepat halus merata hitungan detik',
+  'tanpa listrik hemat daya manual',
+  'gagang kayu tahan panas estetik',
+  'tahan suhu panas tinggi oven kukus',
+  'kapasitas mini pas masak porsi keluarga',
+  'mudah dibongkar pasang dan dicuci',
+  'dilengkapi wadah penampung transparan',
+  'dua sisi bolak balik serbaguna',
+  'roll otomatis sistem gravitasi praktis',
+  'desain modern cantik dapur minimalis',
+  'tekan otomatis sekali tekan praktis',
+  'anti gores aman untuk wajan teflon',
+  'tahan lama awet tidak mudah patah',
+  'anti bocor anti tumpah presisi',
+  'magnetik kuat nempel di kulkas dinding',
+  'dilengkapi sensor otomatis presisi',
+  'gagang ergonomis anti selip licin',
+  'lapisan marmer granit anti lengket',
+  'food grade aman untuk bayi mpasi',
+  'desain lipat hemat tempat serbaguna',
+  'tahan banting bahan tebal berkualitas',
+  'putaran 360 derajat putar halus',
+  'tekanan vakum kedap udara rapat',
+  'gagang panjang anti cipratan panas',
+  'tutup bambu alami kedap udara',
+  'kapasitas presisi dengan garis takar',
+  'multifungsi untuk segala jenis masakan',
+  'ringan kokoh mudah dipakai sehari hari',
+  'anti lumut anti karat higienis',
+  'tampilan lcd digital presisi tinggi',
+  'sistem pegas semi otomatis cepat',
+  'anti panas ganda pelindung tangan',
+  'alas anti slip tidak mudah bergeser',
+  'wadah transparan mudah pantau isi'
+];
+
+export const KITCHEN_TARGETS = [
+  'untuk perlengkapan dapur minimalis',
+  'untuk perabotan dapur estetik modern',
+  'untuk peralatan masak praktis harian',
+  'untuk persiapan masak food prep mingguan',
+  'untuk dapur sempit anak kost hemat ruang',
+  'untuk memotong merajang bumbu bawang cabai',
+  'untuk menghaluskan bumbu masak praktis',
+  'untuk mengupas buah sayur harian',
+  'untuk memotong mengiris daging beku cincang',
+  'untuk mengaduk mencetak adonan kue roti',
+  'untuk menggoreng telur sarapan 4 lubang',
+  'untuk memanggang sarapan roti sandwich praktis',
+  'untuk membuat waffle kue mini cemilan anak',
+  'untuk meniriskan gorengan minyak panas',
+  'untuk menyaring minyak jelantah sisa goreng',
+  'untuk mencuci beras buah sayur tiris cepat',
+  'untuk wadah penyimpanan bumbu garam gula',
+  'untuk wadah minyak kecap saus anti tumpah',
+  'untuk menata telur rapi di kulkas',
+  'untuk merekatkan bungkus plastik makanan sisa',
+  'untuk menutup wadah mangkok elastis kedap udara',
+  'untuk mengasah pisau gunting dapur tumpul',
+  'untuk membuka kaleng toples tutup botol keras',
+  'untuk mengukur menimbang takaran bumbu resep',
+  'untuk mengukur suhu minyak daging panggang',
+  'untuk pelindung cipratan minyak kompor gas',
+  'untuk tatakan wajan panci panas di meja',
+  'untuk mencetak pastel dumpling gyoza praktis',
+  'untuk mencetak sushi roll bento anak',
+  'untuk mencetak bakso bakwan bentuk bulat rapi',
+  'untuk membuat foam busa susu kopi lembut',
+  'untuk membersihkan kerak wajan panci gosong',
+  'untuk mencuci piring wastafel higienis',
+  'untuk membersihkan botol tumbler sedotan sempit',
+  'untuk memasak mpasi bayi higienis sehat',
+  'untuk perlengkapan memasak anti ribet',
+  'untuk ibu rumah tangga cerdas hemat waktu',
+  'untuk memasak cepat praktis tanpa ribet',
+  'untuk alat dapur wajib ada di rumah',
+  'untuk aksesoris dapur serbaguna kekinian'
+];
+
+export const KITCHEN_INTENT_MODIFIERS = [
+  'viral tiktok',
+  'shopee haul murah',
+  'rekomendasi shopee termurah',
+  'review alat dapur viral',
+  'racun dapur viral estetik',
+  'alat masak wajib punya ibu cerdas',
+  'solusi masak praktis harian',
+  'peralatan masak unik berfaedah',
+  'alat dapur canggih viral',
+  'peralatan dapur anak kost praktis',
+  'rekomendasi ibu rumah tangga hemat',
+  'alat dapur estetik murah kekinian',
+  'alat dapur kekinian multifungsi',
+  'rekomendasi kitchen hacks dapur',
+  'alat dapur terbaik viral rating tinggi',
+  'spill alat dapur murah awet viral',
+  'perabot dapur mungil serbaguna praktis',
+  'gadget dapur unik praktis kekinian',
+  'perkakas dapur serbaguna viral',
+  'peralatan dapur fungsional hemat ruang',
+  'alat masak praktis hemat waktu tenaga',
+  'alat masak anti ribet wajib punya',
+  'peralatan masak serba guna praktis',
+  'alat dapur simpel berkualitas awet',
+  'alat bantu masak dapur wajib ada',
+  'kitchen tool viral shopee termurah',
+  'kitchen gadget praktis masa kini',
+  'alat masak praktis rekomendasi chef',
+  'barang unik dapur viral bermanfaat',
+  'perlengkapan masak praktis serbaguna',
+  'perlengkapan dapur estetik kekinian',
+  'rekomendasi perabot dapur minimalis',
+  'alat dapur serbaguna harga terjangkau',
+  'perlengkapan dapur wajib punya 2026',
+  'perabotan dapur modern hemat tempat',
+  'peralatan memasak kekinian viral',
+  'perabot dapur aesthetic shopee haul',
+  'alat dapur pintar mempermudah masak',
+  'peralatan dapur terlengkap paling dicari',
+  'solusi dapur rapi bersih hemat ruang',
+  'peralatan masak anti ribet serbaguna',
+  'alat dapur viral racun shopee',
+  'perlengkapan masak ibu rumah tangga',
+  'alat masak serbaguna kualitas premium',
+  'gadget dapur praktis rekomendasi ibu muda',
+  'perabot dapur multifungsi modern',
+  'perlengkapan dapur serbaguna termurah',
+  'alat masak canggih praktis harian',
+  'kitchen hacks alat masak praktis',
+  'spill perlengkapan dapur murah viral'
+];
+
+/**
+ * Generates an unlimited stream of unique, authentic kitchen tool keywords
+ * using combinatorial cross-product patterns, strictly avoiding any bulky items
+ * or keywords in the excluded set.
+ */
+export function generateCombinatorialKitchenKeywords(limit = 1000, excludedSet = new Set()) {
+  const resultSet = new Set();
+
+  const patterns = [
+    (tool, variant, target, mod) => `${tool} ${variant}`,
+    (tool, variant, target, mod) => `${tool} ${target}`,
+    (tool, variant, target, mod) => `${tool} ${mod}`,
+    (tool, variant, target, mod) => `${tool} ${variant} ${mod}`,
+    (tool, variant, target, mod) => `${tool} ${target} ${mod}`,
+    (tool, variant, target, mod) => `${mod} ${tool} ${variant}`,
+    (tool, variant, target, mod) => `${mod} ${tool}`,
+    (tool, variant, target, mod) => `${tool} ${variant} ${target}`,
+    (tool, variant, target, mod) => `${mod} ${tool} ${target}`,
+    (tool, variant, target, mod) => `rekomendasi ${tool} ${variant}`,
+    (tool, variant, target, mod) => `spill ${tool} ${mod}`,
+    (tool, variant, target, mod) => `${tool} multifungsi ${variant}`,
+    (tool, variant, target, mod) => `alat dapur ${tool} ${variant}`,
+    (tool, variant, target, mod) => `perlengkapan masak ${tool} ${target}`
+  ];
+
+  // Fisher-Yates shuffle clones of our arrays so each invocation produces unique orders
+  const tools = [...KITCHEN_CORE_TOOLS];
+  for (let i = tools.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tools[i], tools[j]] = [tools[j], tools[i]];
+  }
+
+  const variants = [...KITCHEN_VARIANTS];
+  for (let i = variants.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [variants[i], variants[j]] = [variants[j], variants[i]];
+  }
+
+  const targets = [...KITCHEN_TARGETS];
+  for (let i = targets.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [targets[i], targets[j]] = [targets[j], targets[i]];
+  }
+
+  const mods = [...KITCHEN_INTENT_MODIFIERS];
+  for (let i = mods.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [mods[i], mods[j]] = [mods[j], mods[i]];
+  }
+
+  for (let pIdx = 0; pIdx < patterns.length; pIdx++) {
+    const patternFn = patterns[pIdx];
+    for (let i = 0; i < tools.length; i++) {
+      const tool = tools[i];
+      for (let j = 0; j < variants.length; j++) {
+        const variant = variants[j];
+        const target = targets[(i + j) % targets.length];
+        const mod = mods[(i * 3 + j) % mods.length];
+
+        const candidate = patternFn(tool, variant, target, mod).trim();
+        const norm = normalizeKeyword(candidate);
+
+        if (!excludedSet.has(norm) && !resultSet.has(candidate)) {
+          if (!isBulkyOrUnsuitableProduct(candidate)) {
+            resultSet.add(candidate);
+            if (resultSet.size >= limit) return Array.from(resultSet);
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(resultSet);
+}
+
+/**
+ * Returns a randomized, expansive array of 1000+ unique kitchen tool keywords.
+ * Automatically excludes any keywords or product titles that have already been generated/processed.
+ */
+export function getAutoKeywords(limit = 1000, { excludeUsed = true, shuffle = true } = {}) {
+  const usedStore = loadUsedKeywords();
+  const excludedSet = new Set();
+
+  if (excludeUsed) {
+    if (usedStore.keywords) {
+      for (const k of Object.keys(usedStore.keywords)) {
+        excludedSet.add(normalizeKeyword(k));
+      }
+    }
+    if (usedStore.productTitles) {
+      for (const t of Object.keys(usedStore.productTitles)) {
+        excludedSet.add(normalizeKeyword(t));
+      }
+    }
+  }
+
+  const resultSet = new Set();
+
+  // 1. First include any unused default curated keywords
+  for (const kw of DEFAULT_AUTO_KEYWORDS) {
+    const norm = normalizeKeyword(kw);
+    if (!excludedSet.has(norm) && !isBulkyOrUnsuitableProduct(kw)) {
+      resultSet.add(kw);
+      if (resultSet.size >= limit) break;
+    }
+  }
+
+  // 2. Dynamically synthesize remaining keywords from combinatorial kitchen matrix
+  if (resultSet.size < limit) {
+    const needed = limit - resultSet.size;
+    const combinedExcluded = new Set([...excludedSet]);
+    for (const item of resultSet) {
+      combinedExcluded.add(normalizeKeyword(item));
+    }
+    const generated = generateCombinatorialKitchenKeywords(needed * 2, combinedExcluded);
+    for (const g of generated) {
+      resultSet.add(g);
+      if (resultSet.size >= limit) break;
+    }
+  }
+
+  let result = Array.from(resultSet);
+
+  if (shuffle) {
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+  }
+
+  return result.slice(0, limit);
 }
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 const insecureTlsAgent = new https.Agent({ rejectUnauthorized: false });
 
-let cachedDdgIp = '20.43.161.105'; // Known Azure IP for DuckDuckGo
-let lastDdgIpLookup = 0;
-
-async function resolveDdgIp() {
-  const now = Date.now();
-  if (cachedDdgIp && now - lastDdgIpLookup < 3600000) {
-    return cachedDdgIp;
-  }
-  try {
-    const res = await fetch('https://dns.google/resolve?name=html.duckduckgo.com&type=A', {
-      agent: insecureTlsAgent,
-      timeout: 3000,
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const ip = json?.Answer?.find((a) => a.type === 1)?.data;
-      if (ip) {
-        cachedDdgIp = ip;
-        lastDdgIpLookup = now;
-        return ip;
-      }
-    }
-  } catch {
-    // Keep fallback IP
-  }
-  return cachedDdgIp;
-}
-
 function formatKeywordToProductTitle(keyword) {
-  if (!keyword) return 'Produk Rumah Tangga Viral';
+  if (!keyword) return 'Alat Dapur Praktis Viral';
   return keyword
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -442,7 +1176,7 @@ function formatKeywordToProductTitle(keyword) {
 
 export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
   try {
-    const results = (await searchDuckDuckGoShopee(keyword)).filter(r => !seen.has(r.url));
+    const results = (await searchShopeeProducts(keyword)).filter(r => !seen.has(r.url));
     results.forEach(r => seen.add(r.url));
 
     if (results.length > 0) {
@@ -458,7 +1192,7 @@ export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
         if (!titleCandidate || isGenericShopeeTitle(titleCandidate)) {
           titleCandidate = formatKeywordToProductTitle(keyword);
         }
-        const descCandidate = cleanDescription(pageMeta.description || result.snippet || '') || `Produk praktis viral: ${titleCandidate}.`;
+        const descCandidate = cleanDescription(pageMeta.description || result.snippet || '') || `Produk alat dapur praktis: ${titleCandidate}.`;
 
         if (isBulkyOrUnsuitableProduct(titleCandidate) || isBulkyOrUnsuitableProduct(descCandidate) || isBulkyOrUnsuitableProduct(keyword)) {
           continue;
@@ -469,6 +1203,7 @@ export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
           title: titleCandidate,
           description: descCandidate,
           url: result.url,
+          imageUrl: pageMeta.imageUrl || result.thumbnail || '',
         };
       }
     }
@@ -488,7 +1223,7 @@ export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
   return {
     keyword,
     title: formattedTitle,
-    description: `Produk praktis viral: ${formattedTitle}. Kualitas terjamin, multifungsi dan cocok untuk kebutuhan sehari-hari.`,
+    description: `Produk alat dapur praktis: ${formattedTitle}. Kualitas terjamin, multifungsi dan sangat cocok untuk kebutuhan masak sehari-hari.`,
     url: shopeeUrl,
   };
 }
@@ -533,7 +1268,7 @@ export async function discoverShopeeProducts({
 export async function discoverYouTubeCandidatesForProduct({
   productTitle,
   productDescription = '',
-  limit = 10,
+  limit = 16,
   excludeVideoIds = new Set(),
   searchIteration = 0,
   onProgress = () => {},
@@ -576,7 +1311,7 @@ export async function discoverYouTubeCandidatesForProduct({
 
   // Fallback: If all results were previously used or cleanResults was empty, search exact core noun
   if (!candidates.length) {
-    const fallbackResults = await searchYouTubeVideos(`${coreNoun} review`, { limit, onProgress });
+    const fallbackResults = await searchYouTubeVideos(`${coreNoun} "b-roll"`, { limit, onProgress });
     const nonExcluded = (fallbackResults || []).filter((c) => {
       const vid = c.id || extractVideoId(c.url);
       return vid && !excludeSet.has(vid) && isLikelyCleanYouTubeCandidate(c, coreWords);
@@ -599,6 +1334,467 @@ export async function discoverYouTubeCandidatesForProduct({
   return cleanCandidates;
 }
 
+/**
+ * Scrapes Bing Videos for high-quality demonstration candidates matching the query.
+ * Bing Video Search returns rich metadata: video title, duration, uploader, and direct YouTube URLs.
+ */
+export async function searchBingVideos(query, { limit = 20, onProgress = () => {} } = {}) {
+  const cleanQuery = buildCleanYouTubeQuery(query);
+  const safeLimit = Math.max(1, Math.min(30, Number(limit) || 20));
+  const url = `https://www.bing.com/videos/search?q=${encodeURIComponent(cleanQuery)}&qft=+filterui:duration-medium+filterui:video-definition-high`;
+
+  onProgress({
+    step: 'auto_video_search',
+    message: `Mencari video via Bing Video: "${cleanQuery}"...`,
+    progress: 8,
+  });
+
+  try {
+    const res = await fetchWithTlsFallback(url, {
+      timeoutMs: 4000,
+      headers: {
+        'User-Agent': USER_AGENT,
+        'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+    });
+
+    if (!res || !res.ok) return [];
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const candidates = [];
+    const seenIds = new Set();
+
+    $('div.mc_vtvc, div.vrwrap, [data-vid], li.b_algo').each((_, el) => {
+      const $el = $(el);
+      const htmlSnippet = $el.html() || '';
+      const m = htmlSnippet.match(/(?:watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (!m) return;
+      const id = m[1];
+      if (seenIds.has(id)) return;
+      seenIds.add(id);
+
+      const ariaLabel = $el.find('a[aria-label]').attr('aria-label') || '';
+      const rawTitle = $el.find('.b_tit, .vtru_title, .title').first().text().trim() || $el.find('a').first().text().trim();
+
+      let title = rawTitle;
+      let durationSec = 0;
+      let channel = '';
+
+      if (ariaLabel) {
+        const titleMatch = ariaLabel.match(/^(.*?)(?:\s+dari\s+YouTube|\s+from\s+YouTube|\s+·)/i);
+        if (titleMatch && titleMatch[1].trim()) {
+          title = titleMatch[1].trim();
+        }
+
+        const durMinSec = ariaLabel.match(/(?:Durasi|Duration):\s*(\d+)\s*(?:menit|min|m)(?:\s*(\d+)\s*(?:detik|sec|s))?/i);
+        const durSecOnly = ariaLabel.match(/(?:Durasi|Duration):\s*(\d+)\s*(?:detik|sec|s)/i);
+        if (durMinSec) {
+          durationSec = Number(durMinSec[1]) * 60 + (Number(durMinSec[2]) || 0);
+        } else if (durSecOnly) {
+          durationSec = Number(durSecOnly[1]);
+        }
+
+        const uploaderMatch = ariaLabel.match(/(?:uploaded by|diunggah oleh)\s+([^·\.]+)/i);
+        if (uploaderMatch) channel = uploaderMatch[1].trim();
+      }
+
+      // Filter out videos with known duration < 5 min (300s) or > 15 min (900s)
+      if (durationSec > 0 && (durationSec < 300 || durationSec > 900)) return;
+
+      // Filter out videos with banned / tutorial / DIY / repair keywords
+      if (/\b(cara|tutorial|diy|how\s+to|do\s+it\s+yourself|unboxing|perbaikan|penggantian|pergantian|mengganti|rusak|service|servis|ganti|repair|reparasi|bongkar)\b/i.test(title)) return;
+
+      candidates.push({
+        id,
+        title: title || query,
+        url: `https://www.youtube.com/watch?v=${id}`,
+        duration: durationSec,
+        channel,
+        source: 'bing_video',
+      });
+
+      if (candidates.length >= safeLimit) return false;
+    });
+
+    if (candidates.length < safeLimit) {
+      const ytRegex = /https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/g;
+      let rm;
+      while ((rm = ytRegex.exec(html)) !== null && candidates.length < safeLimit) {
+        const id = rm[1];
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          candidates.push({
+            id,
+            title: query,
+            url: `https://www.youtube.com/watch?v=${id}`,
+            duration: 0,
+            channel: '',
+            source: 'bing_video',
+          });
+        }
+      }
+    }
+
+    return candidates;
+  } catch (err) {
+    console.warn(`[Discovery] Bing Video search notice: ${err.message}`);
+    return [];
+  }
+}
+
+/**
+ * Searches video demonstration candidates across search engines (YouTube & Bing Videos).
+ * Deduplicates by video ID, filters out previously used videos, and applies Stage 1 metadata filters.
+ */
+export async function searchMultiEngineVideos(query, {
+  limit = 20,
+  excludeVideoIds = new Set(),
+  onProgress = () => {},
+} = {}) {
+  const excludeSet = excludeVideoIds instanceof Set ? excludeVideoIds : new Set(excludeVideoIds || []);
+  const safeLimit = Math.max(1, Math.min(30, Number(limit) || 20));
+
+  onProgress({
+    step: 'auto_video_search',
+    message: `Mencari video di mesin telusur (YouTube & Bing) untuk: "${query}"...`,
+    progress: 5,
+  });
+
+  const allCandidates = [];
+  const seenIds = new Set(excludeSet);
+
+  // 1. Query YouTube (Native Web Search + yt-dlp)
+  try {
+    const ytResults = await searchYouTubeVideos(query, { limit: safeLimit, onProgress });
+    if (Array.isArray(ytResults)) {
+      for (const item of ytResults) {
+        const vid = item.id || extractVideoId(item.url);
+        if (vid && !seenIds.has(vid)) {
+          seenIds.add(vid);
+          allCandidates.push({ ...item, id: vid, source: 'youtube' });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[MultiEngineVideo] YouTube search error: ${err.message}`);
+  }
+
+  // 2. Query Bing Videos (Fast, independent video index)
+  try {
+    const bingResults = await searchBingVideos(query, { limit: safeLimit, onProgress });
+    if (Array.isArray(bingResults)) {
+      for (const item of bingResults) {
+        const vid = item.id || extractVideoId(item.url);
+        if (vid && !seenIds.has(vid)) {
+          seenIds.add(vid);
+          allCandidates.push({ ...item, id: vid, source: 'bing_video' });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[MultiEngineVideo] Bing Video search error: ${err.message}`);
+  }
+
+  // 2B. Jika query awal panjang dan belum ada hasil, coba query ringkas dari Core Product Noun
+  if (allCandidates.length === 0) {
+    try {
+      const coreInfo = extractCoreProductInfo(query);
+      const coreQuery = coreInfo?.coreProductNoun;
+      if (coreQuery && coreQuery.toLowerCase() !== query.toLowerCase() && coreQuery.split(' ').length < query.split(' ').length) {
+        console.log(`[MultiEngineVideo] Query awal panjang tidak menemukan hasil, mencoba core product noun: "${coreQuery}"`);
+        const ytCoreResults = await searchYouTubeVideos(coreQuery, { limit: safeLimit, onProgress });
+        if (Array.isArray(ytCoreResults)) {
+          for (const item of ytCoreResults) {
+            const vid = item.id || extractVideoId(item.url);
+            if (vid && !seenIds.has(vid)) {
+              seenIds.add(vid);
+              allCandidates.push({ ...item, id: vid, source: 'youtube' });
+            }
+          }
+        }
+      }
+    } catch (coreErr) {
+      console.warn(`[MultiEngineVideo] Core noun YouTube search notice: ${coreErr.message}`);
+    }
+  }
+
+  // 3. Extract core words from the query (ignoring modifiers and negative terms)
+  const ignoredQueryWords = new Set(['watermark', 'lyric', 'subtitle', 'logo', 'intro', 'overlay', 'cara', 'tutorial', 'diy', 'how', 'unboxing', 'perbaikan', 'penggantian', 'pergantian', 'mengganti', 'rusak', 'service', 'servis', 'ganti', 'repair', 'reparasi', 'bongkar', 'roll', 'footage', 'version', 'graphics', 'clean', 'raw']);
+  const queryWords = normalizeText(query).split(' ').filter((w) => w.length >= 3 && !ignoredQueryWords.has(w));
+
+  // 4. Filter through Stage 1 Metadata Pre-filter (clean content, faceless keywords, no bulky furniture)
+  const cleanCandidates = allCandidates.filter((candidate) => isLikelyCleanYouTubeCandidate(candidate, queryWords));
+
+  console.log(`[MultiEngineVideo] Ditemukan ${allCandidates.length} total video (${cleanCandidates.length} lolos filter metadata Stage 1) untuk: "${query}"`);
+  return cleanCandidates.slice(0, safeLimit);
+}
+
+/**
+ * ── PENCARIAN VISUAL (REVERSE IMAGE SEARCH) VIA BING ──────────────────────────
+ * Menggunakan URL gambar produk untuk mencari halaman & link video yang memuat gambar yang sama.
+ */
+export async function searchBingVisualSearch(imageUrl, { limit = 10, onProgress = () => {} } = {}) {
+  if (!imageUrl || typeof imageUrl !== 'string') return { candidates: [], visualTags: [] };
+
+  onProgress({
+    step: 'visual_search_bing',
+    message: 'Mencari video via Bing Visual Search (Reverse Image Search)...',
+    progress: 8,
+  });
+
+  const targetUrl = `https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:${encodeURIComponent(imageUrl)}`;
+  try {
+    const res = await fetchWithTlsFallback(targetUrl, {
+      timeoutMs: 8000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+      }
+    });
+
+    if (!res || !res.ok) return { candidates: [], visualTags: [] };
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const candidates = [];
+    const seenVids = new Set();
+
+    // 1. Cari link video YouTube langsung dari hasil halaman visual search
+    $('a[href]').each((i, el) => {
+      const href = $(el).attr('href') || '';
+      const text = $(el).text().trim();
+      const vid = extractVideoId(href);
+      if (vid && !seenVids.has(vid)) {
+        seenVids.add(vid);
+        candidates.push({
+          id: vid,
+          url: `https://www.youtube.com/watch?v=${vid}`,
+          title: text || 'Video dari Pencarian Visual Produk',
+          duration: 180,
+          source: 'bing_visual_search',
+        });
+      }
+    });
+
+    // 2. Kumpulkan visual tags yang dikenali oleh Bing
+    const visualTags = [];
+    $('.tag, a.tag, .b_visualSearchTitle, .b_focusText').each((i, el) => {
+      const tagText = $(el).text().trim();
+      if (tagText && tagText.length >= 3 && !visualTags.includes(tagText)) {
+        visualTags.push(tagText);
+      }
+    });
+
+    return { candidates: candidates.slice(0, limit), visualTags };
+  } catch (err) {
+    console.warn(`[BingVisualSearch] Gagal melakukan pencarian gambar: ${err.message}`);
+    return { candidates: [], visualTags: [] };
+  }
+}
+
+/**
+ * ── ANALISIS GAMBAR PRODUK VIA GEMINI VISION (IMAGE-TO-QUERY) ─────────────────
+ * Membaca foto produk fisik untuk mengekstrak nama produk universal (bahasa Inggris/global)
+ * dan 3 query pencarian YouTube yang presisi untuk menemukan video demonstrasi hands-on.
+ */
+export async function extractVisualKeywordsWithAI({ imageUrl, productTitle = '' } = {}) {
+  if (!imageUrl || typeof imageUrl !== 'string') return [];
+
+  try {
+    const rawApiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+    if (!rawApiKey) return [];
+
+    const imgRes = await fetchWithTlsFallback(imageUrl, {
+      timeoutMs: 5000,
+      headers: { 'User-Agent': USER_AGENT }
+    });
+    if (!imgRes || !imgRes.ok) return [];
+
+    const arrayBuffer = await imgRes.arrayBuffer();
+    const imgBuffer = Buffer.from(arrayBuffer);
+    if (imgBuffer.length < 500) return [];
+
+    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+    const mimeType = contentType.split(';')[0].trim() || 'image/jpeg';
+    const base64Data = imgBuffer.toString('base64');
+
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(rawApiKey);
+    const candidateModels = [
+      'gemini-3.5-flash-lite',
+      'gemini-flash-latest',
+      'gemini-3.6-flash',
+      'gemini-3.7-flash',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash'
+    ];
+
+    const prompt = `Analisa gambar produk fisik ini dengan sangat teliti untuk keperluan pencarian footage demonstrasi produk di YouTube.
+Judul referensi (jika ada): "${productTitle}"
+
+Tugas:
+1. Identifikasi nama benda/gadget fisik ini dalam bahasa Inggris universal (nama produk OEM/pabrik yang biasa dipakai reviewer global di YouTube/Amazon/AliExpress).
+2. Buat 4 frasa pencarian YouTube paling efektif dalam bahasa Inggris untuk menemukan footage produk yang bersih, jernih, dan sinematik:
+   - WAJIB kombinasikan nama produk dengan kata kunci aset mentah: "raw footage", "b-roll", "textless", "clean version", "no graphics".
+   - DILARANG KERAS menggunakan kata kunci: cara, tutorial, diy, how to, unboxing, perbaikan, penggantian, rusak, service, servis, ganti, repair, haul, vlog, review wajah.
+   - Hindari kata-kata promo belanja seperti: COD, murah, promo, terlaris, diskon.
+
+Keluarkan JSON dengan format persis:
+{
+  "detectedProductEnglish": "<nama produk universal bahasa Inggris>",
+  "searchQueries": [
+    "<query 1>",
+    "<query 2>",
+    "<query 3>",
+    "<query 4>"
+  ]
+}`;
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
+        });
+
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          }
+        ]);
+
+        const text = result?.response?.text();
+        if (text) {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed.searchQueries) && parsed.searchQueries.length > 0) {
+            return parsed.searchQueries;
+          }
+        }
+      } catch (mErr) {
+        // try next candidate model
+      }
+    }
+    return [];
+  } catch (err) {
+    console.warn(`[VisualSearchAI] Gagal menganalisa gambar dengan AI: ${err.message}`);
+    return [];
+  }
+}
+
+/**
+ * ── ORKESTRATOR UTAMA PENCARIAN VIDEO BERBASIS GAMBAR (VISUAL SEARCH) ─────────
+ * Menggabungkan Bing Visual Search (Reverse Image Lookup) dan Gemini Vision (Image-to-Query)
+ * dengan Multi-Engine Video Search untuk menemukan kandidat video YouTube terbaik.
+ */
+export async function searchVideosByProductImage({
+  imageUrl,
+  productTitle = '',
+  productDescription = '',
+  limit = 20,
+  excludeVideoIds = new Set(),
+  onProgress = () => {},
+} = {}) {
+  const excludeSet = excludeVideoIds instanceof Set ? excludeVideoIds : new Set(excludeVideoIds || []);
+  const safeLimit = Math.max(1, Math.min(30, Number(limit) || 20));
+
+  onProgress({
+    step: 'visual_video_search',
+    message: `Memulai pencarian video berbasis gambar produk (${productTitle ? productTitle.slice(0, 30) : 'foto produk'})...`,
+    progress: 10,
+  });
+
+  const candidates = [];
+  const seenIds = new Set(excludeSet);
+
+  // 1. Jalankan Bing Visual Search (Reverse Image Lookup)
+  if (imageUrl) {
+    try {
+      const { candidates: bingVisualCandidates, visualTags } = await searchBingVisualSearch(imageUrl, {
+        limit: safeLimit,
+        onProgress
+      });
+
+      for (const c of bingVisualCandidates) {
+        if (!seenIds.has(c.id)) {
+          seenIds.add(c.id);
+          candidates.push({ ...c, isVisualSearch: true });
+        }
+      }
+
+      if (Array.isArray(visualTags) && visualTags.length > 0 && candidates.length < safeLimit) {
+        console.log(`[VisualSearch] Bing Visual Tags terdeteksi: ${visualTags.slice(0, 3).join(', ')}`);
+        for (const tag of visualTags.slice(0, 2)) {
+          if (candidates.length >= safeLimit) break;
+          const tagVideos = await searchMultiEngineVideos(`${tag} "b-roll"`, {
+            limit: 8,
+            excludeVideoIds: seenIds,
+            onProgress
+          });
+          for (const tv of tagVideos) {
+            if (!seenIds.has(tv.id)) {
+              seenIds.add(tv.id);
+              candidates.push({ ...tv, isVisualSearch: true });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[VisualSearch] Bing Visual Search error: ${err.message}`);
+    }
+  }
+
+  // 2. Jalankan Gemini Vision (Image-to-Query) jika kandidat masih kurang
+  if (imageUrl && candidates.length < safeLimit) {
+    onProgress({
+      step: 'visual_ai_keywords',
+      message: 'AI Vision menganalisis bentuk fisik produk untuk menemukan video YouTube global...',
+      progress: 20,
+    });
+
+    try {
+      const visualQueries = await extractVisualKeywordsWithAI({
+        imageUrl,
+        productTitle
+      });
+
+      if (Array.isArray(visualQueries) && visualQueries.length > 0) {
+        console.log(`[VisualSearch] Gemini Vision menghasilkan query pencarian:`, visualQueries);
+
+        for (const query of visualQueries) {
+          if (candidates.length >= safeLimit) break;
+          const multiResults = await searchMultiEngineVideos(query, {
+            limit: 10,
+            excludeVideoIds: seenIds,
+            onProgress: (p) => onProgress({
+              step: 'visual_multi_search',
+              message: `Pencarian visual: "${query}" (${p.message})`,
+              progress: 25,
+            }),
+          });
+
+          for (const item of multiResults) {
+            if (!seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              candidates.push({ ...item, source: 'visual_ai_query', isVisualSearch: true });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[VisualSearch] Gemini Visual Keywords error: ${err.message}`);
+    }
+  }
+
+  console.log(`[VisualSearch] Selesai: Ditemukan ${candidates.length} video kandidat melalui pencarian visual gambar.`);
+  return candidates.slice(0, safeLimit);
+}
+
 export function delayWithJitter(minMs, maxMs) {
   const min = Number(minMs) || 0;
   const max = Math.max(min, Number(maxMs) || min);
@@ -606,29 +1802,47 @@ export function delayWithJitter(minMs, maxMs) {
   return new Promise((resolve) => setTimeout(resolve, duration));
 }
 
-async function searchDuckDuckGoShopee(keyword) {
-  const cleanKeyword = String(keyword || '').replace(/\s+/g, ' ').trim();
-  // Include "produk rumah tangga" as requested to target real household Shopee products
-  const searchQueries = [
-    `"${cleanKeyword}" produk rumah tangga site:shopee.co.id`,
-    `${cleanKeyword} produk rumah tangga site:shopee.co.id`,
-    `"${cleanKeyword}" site:shopee.co.id`,
-  ];
+export async function searchShopeeProducts(keyword) {
+  // 1. Prioritas Utama: Bing Search (sangat responsif ~200-350ms di VPS, tidak memblokir IP Datacenter)
+  try {
+    const bingResults = await searchBingShopee(keyword);
+    if (bingResults && bingResults.length > 0) return bingResults;
+  } catch (e) {
+    // continue to next engine
+  }
 
-  const ddgIp = await resolveDdgIp();
-  const ddgAgent = new https.Agent({
-    rejectUnauthorized: false,
-    servername: 'html.duckduckgo.com',
-  });
+  // 2. Prioritas Kedua: Brave Search (fallback cepat ~200ms)
+  try {
+    const braveResults = await searchBraveShopee(keyword);
+    if (braveResults && braveResults.length > 0) return braveResults;
+  } catch (e) {
+    // continue to next engine
+  }
+
+  // 3. Prioritas Ketiga: DuckDuckGo (timeout ketat 1.5 detik agar tidak pernah freeze)
+  try {
+    const ddgResults = await searchDuckDuckGoShopee(keyword);
+    if (ddgResults && ddgResults.length > 0) return ddgResults;
+  } catch (e) {
+    // continue to fallback
+  }
+
+  return [];
+}
+
+export async function searchDuckDuckGoShopee(keyword) {
+  const cleanKeyword = String(keyword || '').replace(/\s+/g, ' ').trim();
+  const searchQueries = [
+    `"${cleanKeyword}" alat dapur site:shopee.co.id`,
+    `${cleanKeyword} alat dapur site:shopee.co.id`,
+  ];
 
   for (const searchQuery of searchQueries) {
     try {
-      const url = `https://${ddgIp}/html/?q=${encodeURIComponent(searchQuery)}`;
-      const response = await fetch(url, {
-        agent: ddgAgent,
-        timeout: 4500,
+      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
+      const response = await fetchWithTlsFallback(url, {
+        timeoutMs: 1500,
         headers: {
-          'Host': 'html.duckduckgo.com',
           'user-agent': USER_AGENT,
           'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -638,7 +1852,7 @@ async function searchDuckDuckGoShopee(keyword) {
       if (!response || !response.ok) continue;
 
       const html = await response.text();
-      if (html.includes('internetbaik.telkomsel.com') || html.includes('blocked')) continue;
+      if (html.includes('internetbaik.telkomsel.com') || html.includes('blocked') || html.includes('anomaly')) continue;
 
       const $ = cheerio.load(html);
       const results = [];
@@ -660,14 +1874,14 @@ async function searchDuckDuckGoShopee(keyword) {
         return dedupeByUrl(results);
       }
     } catch {
-      // Continue to next query / search engine
+      // Continue to next query
     }
   }
 
-  return searchBraveShopee(keyword);
+  return [];
 }
 
-async function searchBraveShopee(keyword) {
+export async function searchBraveShopee(keyword) {
   for (const searchQuery of buildShopeeSearchQueries(keyword).slice(0, 1)) {
     const url = `https://search.brave.com/search?q=${encodeURIComponent(searchQuery)}`;
     try {
@@ -706,11 +1920,11 @@ async function searchBraveShopee(keyword) {
     }
   }
 
-  return searchBingShopee(keyword);
+  return [];
 }
 
-async function searchBingShopee(keyword) {
-  for (const searchQuery of buildShopeeSearchQueries(keyword).slice(0, 1)) {
+export async function searchBingShopee(keyword) {
+  for (const searchQuery of buildShopeeSearchQueries(keyword)) {
     const url = `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`;
     try {
       const response = await fetchWithTlsFallback(url, {
@@ -751,10 +1965,11 @@ async function searchBingShopee(keyword) {
   return [];
 }
 
-async function fetchShopeePageMeta(url) {
+
+export async function fetchShopeePageMeta(url) {
   try {
     const response = await fetchWithTlsFallback(url, {
-      timeoutMs: 3000,
+      timeoutMs: 4000,
       headers: {
         'user-agent': USER_AGENT,
         'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -764,9 +1979,16 @@ async function fetchShopeePageMeta(url) {
 
     const html = await response.text();
     const $ = cheerio.load(html);
+    const rawImg = $('meta[property="og:image"]').attr('content') ||
+      $('meta[name="twitter:image"]').attr('content') ||
+      $('meta[property="og:image:url"]').attr('content') ||
+      $('link[rel="image_src"]').attr('href') || '';
+    const imageUrl = rawImg.startsWith('//') ? `https:${rawImg}` : rawImg;
+
     return {
       title: $('meta[property="og:title"]').attr('content') || $('title').text(),
       description: $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content'),
+      imageUrl: imageUrl || '',
     };
   } catch {
     return {};
@@ -823,22 +2045,23 @@ function decodeBingRedirect(value) {
 
 function buildShopeeSearchQueries(keyword) {
   const cleanKeyword = keyword.replace(/\s+/g, ' ').trim();
-  const slugKeyword = cleanKeyword.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '');
   return [
-    `shopee.co.id "${slugKeyword}" "-i."`,
     `site:shopee.co.id ${cleanKeyword} "i."`,
-    `site:shopee.co.id ${cleanKeyword} shopee product`,
+    `site:shopee.co.id/ ${cleanKeyword}`,
+    `site:shopee.co.id ${cleanKeyword}`,
+    `"shopee.co.id" ${cleanKeyword}`,
   ];
 }
 
-function isShopeeProductUrl(url) {
+export function isShopeeProductUrl(url) {
   if (!url) return false;
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, '');
-    const path = decodeURIComponent(parsed.pathname).toLowerCase();
+    if (host === 'shope.ee' || host === 's.shopee.co.id') return true;
     if (host !== 'shopee.co.id') return false;
-    if (['/search', '/mall', '/buyer', '/cart'].some((prefix) => path.startsWith(prefix))) return false;
+    const path = decodeURIComponent(parsed.pathname).toLowerCase();
+    if (['/search', '/mall', '/buyer', '/cart', '/list', '/flash_sale'].some((prefix) => path.startsWith(prefix))) return false;
     if (/\/shop\/?\d*/.test(path)) return false;
     return path.includes('/product/') || /-i\.\d+\.\d+/.test(path) || /\.\d+\.\d+/.test(path);
   } catch {
@@ -846,22 +2069,44 @@ function isShopeeProductUrl(url) {
   }
 }
 
+export function extractShopeeLinkFromText(text = '') {
+  if (!text || typeof text !== 'string') return '';
+  const match = text.match(/https?:\/\/(?:[a-zA-Z0-9_-]+\.)?(?:shopee\.co\.id|shope\.ee|s\.shopee\.co\.id)\/[^\s"'>\)]+/i);
+  if (match) {
+    let url = match[0].trim();
+    url = url.replace(/[.,;!?]+$/, '');
+    return url;
+  }
+  return '';
+}
+
 export function isLikelyCleanYouTubeCandidate(candidate, productWords = []) {
   if (!candidate.url || !candidate.id) return false;
-  // If duration is known, reject if too short (< 5 min / 300s) or too long (> 15 min / 900s)
-  if (candidate.duration > 0 && (candidate.duration < 300 || candidate.duration > 900)) return false;
+  // If duration is known, reject if too short (< 35s) or too long (> 15 min / 900s)
+  if (candidate.duration > 0 && (candidate.duration < 35 || candidate.duration > 900)) return false;
+
+  // Reject vertical Shorts (which already have hardburned music/captions)
+  if (candidate.url.includes('/shorts/') || /#shorts\b/i.test(candidate.title || '')) return false;
 
   const titleText = normalizeText(candidate.title || '');
   if (isBulkyOrUnsuitableProduct(titleText)) return false;
 
+  // Disqualify broken / repair / disassembly / maintenance tutorials / DIY (NOT actual product demos)
+  if (/\b(cara|tutorial|diy|how\s+to|do\s+it\s+yourself|perbaikan|penggantian|pergantian|mengganti|rusak|service|servis|repair|reparasi|bongkar|membongkar|mati total)\b/i.test(titleText)) return false;
+
   const excludedTitleWords = [
+    'cara', 'tutorial', 'diy', 'how to', 'do it yourself',
     'podcast', 'reaction', 'kompilasi', 'compilation', 'kumpulan', 'full album', 'playlist',
     'vlog', 'daily vlog', 'a day in my life', 'cerita', 'bincang', 'talkshow', 'ngobrol',
     'cara belanja', 'cara checkout', 'daftar akun', 'tutorial aplikasi', 'cara jualan', 'cara live',
     'shopee affiliate tutorial', 'aplikasi shopee',
+    // Exclude cooking recipes, food vlogs, and mukbangs (must be product demonstration, NOT food recipe!)
+    'resep', 'resep masakan', 'cara memasak', 'cooking recipe', 'baking recipe', 'food recipe',
+    'food vlog', 'kuliner', 'mukbang', 'asmr eating', 'masakan rumahan', 'menu masakan', 'dapur umami',
+    'cook with me', 'masak yuk', 'masak memasak', 'ide jualan makanan', 'resep kue',
     // Creator/face-centric and person-focused videos
     'muka', 'wajah', 'facecam', 'webcam', 'selfie', 'grwm', 'get ready with me',
-    'try on haul', 'try on', 'outfit', 'ootd', 'mukbang', 'skincare routine', 'makeup tutorial',
+    'try on haul', 'try on', 'outfit', 'ootd', 'skincare routine', 'makeup tutorial',
     // Subtitle & lyric indicators (wajib dihindari agar tidak tabrakan subtitle)
     'sub indo', 'subtitle', 'subtitles', 'sub english', 'eng sub', 'terjemahan', 'lirik',
     // Social media re-uploads & watermark indicators (wajib bersih tanpa logo sosmed/watermark)
@@ -871,13 +2116,28 @@ export function isLikelyCleanYouTubeCandidate(candidate, productWords = []) {
     'racun shopee haul', 'haul shopee', 'haul tiktok', 'unboxing haul', 'berbagai alat', 'kumpulan gadget',
     // Filter AI-generated, synthetic, and cartoon/3D animation
     'ai generated', 'ai video', 'generative ai', 'sora', 'runway', 'kling', 'hailuo', 'pika',
-    'animation', 'animasi', '3d animation', 'cgi', 'cartoon', 'kartun', 'anime'
+    'animation', 'animasi', '3d animation', 'cgi', 'cartoon', 'kartun', 'anime',
+    // Filter Perbaikan / Service / Kerusakan / Penggantian (Bukan video demo produk baru)
+    'perbaikan', 'penggantian', 'pergantian', 'mengganti', 'rusak', 'service', 'servis', 'ganti', 'repair', 'reparasi', 'bongkar', 'membongkar', 'mati total',
+    // Filter pabrik / proses pembuatan / industrial manufacturing (Bukan peragaan konsumen)
+    'pabrik', 'manufacturing', 'factory', 'proses pembuatan', 'industrial', 'produksi masal', 'how it\'s made', 'how its made',
+    // Filter pemanggang besar / bulky outdoor grill / Blackstone / smoker
+    'blackstone', 'weber', 'smoker', 'barbecue', 'bbq outdoor', 'grill outdoor', 'pemanggang besar', 'panggangan besar', 'commercial grill',
+    // Filter slide foto statis
+    'slideshow', 'slide foto', 'katalog foto',
+    // Filter mesin pertanian, peternakan, limbah, dan chopper pakan
+    'pakan ternak', 'mesin ternak', 'limbah', 'janggel', 'selep', 'pemipil', 'perontok', 'pemanen', 'traktor', 'chopper multifungsi', 'mesin pencacah', 'chopper', 'choper', 'silase', 'alat berat'
   ];
   if (excludedTitleWords.some((keyword) => titleText.includes(keyword))) return false;
 
-  // Strict check: Candidate title MUST match core product keywords with multi-word intersection & cross-category exclusion
+  // Flexible check: Cross-category exclusion for non-kitchen items
+  // Per instruksi pengguna: Verifikasi fisik produk diserahkan ke AI Vision, backend hanya memblokir kategori silang terlarang.
   if (Array.isArray(productWords) && productWords.length > 0) {
-    if (!isTitleMatchingProduct(candidate.title, productWords)) {
+    if (!isTitleMatchingProduct(candidate.title, productWords, {
+      description: candidate.description,
+      tags: candidate.tags,
+      isVisualSearch: true // Delegasikan kecocokan produk detail ke AI Vision
+    })) {
       return false;
     }
   }
@@ -952,67 +2212,339 @@ export function cleanTitle(value = '', productUrl = '') {
 }
 
 export const PRODUCT_ANCHORS = [
-  // 1. Kitchen Prep & Choppers
-  { pattern: /\b(?:chopper\s+(?:mini|elektrik|portable|tarik|wireless)|food\s+chopper|blender\s+mini|blender\s+kapsul|mini\s+cutter)\b/i, noun: 'Chopper Mini Elektrik', category: 'kitchen_prep', core: ['chopper', 'mini'] },
-  { pattern: /\b(?:gunting\s+dapur|gunting\s+sk5|gunting\s+tulang|kitchen\s+shears)\b/i, noun: 'Gunting Dapur SK5', category: 'kitchen_prep', core: ['gunting', 'dapur'] },
-  { pattern: /\b(?:mandoline\s+slicer|pemotong\s+sayur|parutan\s+multifungsi|parutan\s+serbaguna|parutan\s+6\s*in\s*1)\b/i, noun: 'Pemotong Sayur Multifungsi', category: 'kitchen_prep', core: ['pemotong', 'sayur'] },
-  { pattern: /\b(?:pengupas\s+buah|peeler\s+buah|pengupas\s+kulit|pisau\s+peeler)\b/i, noun: 'Alat Pengupas Buah Praktis', category: 'kitchen_prep', core: ['pengupas', 'buah'] },
-  { pattern: /\b(?:pemeras\s+jeruk|pemeras\s+lemon|citrus\s+squeezer|perasan\s+jeruk)\b/i, noun: 'Alat Pemeras Jeruk Manual', category: 'kitchen_prep', core: ['pemeras', 'jeruk'] },
-  { pattern: /\b(?:pemotong\s+semangka|pemotong\s+melon|watermelon\s+slicer)\b/i, noun: 'Pemotong Semangka Praktis', category: 'kitchen_prep', core: ['pemotong', 'semangka'] },
-  { pattern: /\b(?:pelumat\s+bawang|press\s+garlic|penghancur\s+bawang|garlic\s+press)\b/i, noun: 'Alat Pelumat Bawang Putih', category: 'kitchen_prep', core: ['bawang', 'garlic'] },
-  { pattern: /\b(?:cetakan\s+bakso|pembuat\s+bakso|meatball\s+maker)\b/i, noun: 'Cetakan Bakso Manual Praktis', category: 'kitchen_prep', core: ['cetakan', 'bakso'] },
-  { pattern: /\b(?:pemotong\s+daging\s+beku|meat\s+slicer\s+manual|pengiris\s+daging)\b/i, noun: 'Alat Pengiris Daging Manual', category: 'kitchen_prep', core: ['pengiris', 'daging'] },
-  { pattern: /\b(?:pembuat\s+dumpling|cetakan\s+pastel|dumpling\s+maker)\b/i, noun: 'Alat Pembuat Dumpling Pastel', category: 'kitchen_prep', core: ['dumpling', 'pastel'] },
-  { pattern: /\b(?:sealer\s+plastik|perekat\s+plastik|heat\s+sealer|mini\s+sealer)\b/i, noun: 'Sealer Plastik Mini Portable', category: 'kitchen_prep', core: ['sealer', 'plastik'] },
-  { pattern: /\b(?:pengasah\s+pisau|knife\s+sharpener|asah\s+pisau)\b/i, noun: 'Alat Pengasah Pisau Praktis', category: 'kitchen_prep', core: ['pengasah', 'pisau'] },
-  { pattern: /\b(?:timbangan\s+digital|kitchen\s+scale|timbangan\s+dapur)\b/i, noun: 'Timbangan Dapur Digital', category: 'kitchen_prep', core: ['timbangan', 'digital'] },
-  { pattern: /\b(?:timer\s+dapur|kitchen\s+timer)\b/i, noun: 'Timer Dapur Digital Magnetik', category: 'kitchen_prep', core: ['timer', 'dapur'] },
-  { pattern: /\b(?:frother|pengocok\s+susu|pengocok\s+telur\s+mini|milk\s+frother)\b/i, noun: 'Frother Pengocok Susu Mini', category: 'kitchen_prep', core: ['frother', 'pengocok'] },
-  { pattern: /\b(?:hand\s+mixer|mixer\s+tangan\s+mini|mixer\s+portable)\b/i, noun: 'Mixer Tangan Mini Portable', category: 'kitchen_prep', core: ['mixer', 'mini'] },
+  // 1. Kitchen Prep, Choppers & Cutters
+  {
+    pattern: /\b(?:chopper\s+(?:mini|elektrik|portable|tarik|wireless)|food\s+chopper|blender\s+mini|blender\s+kapsul|mini\s+cutter)\b/i,
+    noun: 'Chopper Mini Elektrik',
+    englishNoun: 'Mini Electric Food Chopper',
+    category: 'kitchen_prep',
+    core: ['chopper', 'mini'],
+    multilingual: ['chopper', 'mini', 'blender', 'food chopper', 'garlic chopper', 'meat grinder', 'mincer', 'pelumat', 'gilingan', '绞肉机', '蒜泥器', 'máy xay', 'cối xay', 'เครื่องบด', 'เครื่องสับ']
+  },
+  {
+    pattern: /\b(?:gunting\s+dapur|gunting\s+sk5|gunting\s+tulang|kitchen\s+shears)\b/i,
+    noun: 'Gunting Dapur SK5',
+    englishNoun: 'SK5 Kitchen Shears',
+    category: 'kitchen_prep',
+    core: ['gunting', 'dapur'],
+    multilingual: ['gunting', 'shears', 'scissors', 'kitchen shears', 'poultry shears', 'sk5', 'kitchen scissors', 'gunting dapur', '厨房剪', '剪刀', 'kéo nhà bếp', 'kéo cắt gà', 'กรรไกรครัว', 'กรรไกรตัดอาหาร']
+  },
+  {
+    pattern: /\b(?:mandoline\s+slicer|pemotong\s+sayur|parutan\s+multifungsi|parutan\s+serbaguna|parutan\s+6\s*in\s*1)\b/i,
+    noun: 'Pemotong Sayur Multifungsi',
+    englishNoun: 'Multifunctional Mandoline Slicer',
+    category: 'kitchen_prep',
+    core: ['pemotong', 'sayur'],
+    multilingual: ['mandoline', 'slicer', 'grater', 'shredder', 'cutter', 'pemotong', 'parutan', 'pengiris', 'serutan', '切菜器', '擦丝器', '刨丝器', 'máy cắt rau', 'bào rau', 'nạo rau', 'ที่สไลด์ผัก', 'เครื่องหั่นผัก', 'ที่ขูดผัก']
+  },
+  {
+    pattern: /\b(?:pengupas\s+buah|peeler\s+buah|pengupas\s+kulit|pisau\s+peeler)\b/i,
+    noun: 'Alat Pengupas Buah Praktis',
+    englishNoun: 'Fruit Peeler',
+    category: 'kitchen_prep',
+    core: ['pengupas', 'buah'],
+    multilingual: ['peeler', 'pengupas', 'kupas', 'parer', 'skin remover', 'fruit peeler', 'apple peeler', 'rotary peeler', '削皮器', '削皮刀', '刨皮刀', 'dao gọt', 'nạo vỏ', 'ที่ปอกผลไม้', 'มีดปอกเปลือก', 'pambalat']
+  },
+  {
+    pattern: /\b(?:pemeras\s+jeruk|pemeras\s+lemon|citrus\s+squeezer|perasan\s+jeruk)\b/i,
+    noun: 'Alat Pemeras Jeruk Manual',
+    englishNoun: 'Manual Citrus Juicer Squeezer',
+    category: 'kitchen_prep',
+    core: ['pemeras', 'jeruk'],
+    multilingual: ['squeezer', 'juicer', 'pemeras', 'perasan', 'lemon squeezer', 'citrus squeezer', 'orange juicer', 'hand juicer', '压汁机', '榨汁器', 'vắt cam', 'ép cam', 'ép chanh', 'ที่คั้นน้ำส้ม', 'ที่บีบมะนาว', 'pigaan']
+  },
+  {
+    pattern: /\b(?:pemotong\s+semangka|pemotong\s+melon|watermelon\s+slicer)\b/i,
+    noun: 'Pemotong Semangka Praktis',
+    englishNoun: 'Watermelon Slicer Cutter',
+    category: 'kitchen_prep',
+    core: ['pemotong', 'semangka'],
+    multilingual: ['watermelon slicer', 'melon slicer', 'pemotong semangka', 'semangka', 'watermelon cutter', '切西瓜器', 'cắt dưa hấu', 'ที่ตัดแตงโม', 'ที่หั่นแตงโม']
+  },
+  {
+    pattern: /\b(?:pelumat\s+bawang|press\s+garlic|penghancur\s+bawang|garlic\s+press)\b/i,
+    noun: 'Alat Pelumat Bawang Putih',
+    englishNoun: 'Garlic Press Crusher',
+    category: 'kitchen_prep',
+    core: ['bawang', 'garlic'],
+    multilingual: ['garlic press', 'garlic crusher', 'garlic mincer', 'bawang', 'garlic', 'pelumat bawang', 'penghancur bawang', '压蒜器', '蒜泥器', 'kẹp tỏi', 'nghiền tỏi', 'ép tỏi', 'ที่บดกระเทียม', 'ที่กดกระเทียม', 'pandurog ng bawang']
+  },
+  {
+    pattern: /\b(?:cetakan\s+bakso|pembuat\s+bakso|meatball\s+maker)\b/i,
+    noun: 'Cetakan Bakso Manual Praktis',
+    englishNoun: 'Meatball Maker Spoon Mold',
+    category: 'kitchen_prep',
+    core: ['cetakan', 'bakso'],
+    multilingual: ['meatball maker', 'meatball mold', 'cetakan bakso', 'pembuat bakso', 'bakso', 'meatball spoon', '肉丸器', '丸子模具', 'khuôn làm thịt viên', 'แม่พิมพ์ทำลูกชิ้น', 'ที่ทำลูกชิ้น']
+  },
+  {
+    pattern: /\b(?:pemotong\s+daging\s+beku|meat\s+slicer\s+manual|pengiris\s+daging)\b/i,
+    noun: 'Alat Pengiris Daging Manual',
+    englishNoun: 'Manual Frozen Meat Slicer',
+    category: 'kitchen_prep',
+    core: ['pengiris', 'daging'],
+    multilingual: ['meat slicer', 'frozen meat', 'pengiris daging', 'pemotong daging', 'meat cutter', 'slicer manual', '切肉机', '切片机', 'máy cắt thịt', 'thái thịt', 'เครื่องสไลด์เนื้อ', 'ที่สไลด์เนื้อ']
+  },
+  {
+    pattern: /\b(?:pembuat\s+dumpling|cetakan\s+pastel|dumpling\s+maker)\b/i,
+    noun: 'Alat Pembuat Dumpling Pastel',
+    englishNoun: 'Dumpling Maker Mold Press',
+    category: 'kitchen_prep',
+    core: ['dumpling', 'pastel'],
+    multilingual: ['dumpling maker', 'dumpling press', 'empanada maker', 'cetakan dumpling', 'pembuat pastel', 'cetakan pastel', 'dumpling', 'pastel', '包饺子神器', '饺子模具', 'khuôn làm sủi cảo', 'khuôn bánh bao', 'ที่ทำเกี๊ยว', 'แม่พิมพ์เกี๊ยว']
+  },
+  {
+    pattern: /\b(?:sealer\s+plastik|perekat\s+plastik|heat\s+sealer|mini\s+sealer)\b/i,
+    noun: 'Sealer Plastik Mini Portable',
+    englishNoun: 'Mini Bag Heat Sealer',
+    category: 'kitchen_prep',
+    core: ['sealer', 'plastik'],
+    multilingual: ['sealer', 'heat sealer', 'bag sealer', 'plastic sealer', 'mini sealer', 'perekat plastik', 'sealer plastik', 'press plastik', '封口机', 'máy hàn miệng túi', 'เครื่องซีลถุง', 'ที่ซีลถุง']
+  },
+  {
+    pattern: /\b(?:pengasah\s+pisau|knife\s+sharpener|asah\s+pisau)\b/i,
+    noun: 'Alat Pengasah Pisau Praktis',
+    englishNoun: 'Kitchen Knife Sharpener',
+    category: 'kitchen_prep',
+    core: ['pengasah', 'pisau'],
+    multilingual: ['knife sharpener', 'blade sharpener', 'sharpening', 'whetstone', 'pengasah pisau', 'asah pisau', 'asahan pisau', '磨刀器', '磨刀石', 'dụng cụ mài dao', 'mài dao', 'ที่ลับมีด', 'เครื่องลับมีด']
+  },
+  {
+    pattern: /\b(?:timbangan\s+digital|kitchen\s+scale|timbangan\s+dapur)\b/i,
+    noun: 'Timbangan Dapur Digital',
+    englishNoun: 'Digital Kitchen Food Scale',
+    category: 'kitchen_prep',
+    core: ['timbangan', 'digital'],
+    multilingual: ['kitchen scale', 'digital scale', 'food scale', 'baking scale', 'timbangan dapur', 'timbangan digital', 'timbangan', '厨房秤', '电子秤', 'cân điện tử', 'cân tiểu ly', 'ตาชั่งดิจิตอล', 'เครื่องชั่งดิจิตอล']
+  },
+  {
+    pattern: /\b(?:timer\s+dapur|kitchen\s+timer)\b/i,
+    noun: 'Timer Dapur Digital Magnetik',
+    englishNoun: 'Digital Kitchen Timer',
+    category: 'kitchen_prep',
+    core: ['timer', 'dapur'],
+    multilingual: ['kitchen timer', 'cooking timer', 'digital timer', 'timer dapur', 'timer digital', '厨房定时器', 'đồng hồ hẹn giờ', 'นาฬิกาจับเวลาในครัว']
+  },
+  {
+    pattern: /\b(?:frother|pengocok\s+susu|pengocok\s+telur\s+mini|milk\s+frother)\b/i,
+    noun: 'Frother Pengocok Susu Mini',
+    englishNoun: 'Handheld Milk Frother Whisk',
+    category: 'kitchen_prep',
+    core: ['frother', 'pengocok'],
+    multilingual: ['milk frother', 'frother', 'hand frother', 'whisk', 'egg beater', 'pengocok susu', 'pengocok telur', 'mixer mini', '奶泡机', '打蛋器', 'máy tạo bọt sữa', 'đánh trứng', 'ที่ตีฟองนม', 'ที่ตีไข่']
+  },
+  {
+    pattern: /\b(?:hand\s+mixer|mixer\s+tangan\s+mini|mixer\s+portable)\b/i,
+    noun: 'Mixer Tangan Mini Portable',
+    englishNoun: 'Portable Hand Mixer',
+    category: 'kitchen_prep',
+    core: ['mixer', 'mini'],
+    multilingual: ['hand mixer', 'portable mixer', 'cordless mixer', 'mixer tangan', 'mixer mini', 'mixer', '无线打蛋器', 'máy đánh trứng mini', 'เครื่องผสมอาหารมือถือ']
+  },
+  {
+    pattern: /\b(?:pemotong\s+kentang|potato\s+cutter|french\s+fries\s+cutter|kentang\s+spiral)\b/i,
+    noun: 'Alat Pemotong Kentang Praktis',
+    englishNoun: 'French Fry Potato Cutter',
+    category: 'kitchen_prep',
+    core: ['pemotong', 'kentang'],
+    multilingual: ['potato cutter', 'french fry cutter', 'potato slicer', 'pemotong kentang', 'kentang spiral', 'french fries', '切薯条器', '切土豆条', 'máy cắt khoai tây', 'ที่หั่นมันฝรั่ง', 'ที่ตัดเฟรนช์ฟรายส์']
+  },
+  {
+    pattern: /\b(?:serut\s+jagung|pemipil\s+jagung|corn\s+stripper)\b/i,
+    noun: 'Alat Pemipil Jagung Serbaguna',
+    englishNoun: 'Corn Stripper Peeler Thresher',
+    category: 'kitchen_prep',
+    core: ['serut', 'jagung'],
+    multilingual: ['corn stripper', 'corn peeler', 'corn thresher', 'corn kernel remover', 'pemipil jagung', 'serut jagung', 'kupas jagung', '玉米剥粒器', 'tách hạt bắp', 'nạo ngô', 'ที่ฝานข้าวโพด', 'ที่แกะเมล็ดข้าวโพด']
+  },
+  {
+    pattern: /\b(?:parutan\s+keju|cheese\s+grater|parutan\s+kelapa)\b/i,
+    noun: 'Parutan Keju Kelapa Stainless',
+    englishNoun: 'Stainless Steel Cheese Grater',
+    category: 'kitchen_prep',
+    core: ['parutan', 'keju'],
+    multilingual: ['cheese grater', 'grater', 'zester', 'parutan keju', 'parutan kelapa', 'parutan stainless', '芝士擦丝器', '奶酪刨', 'bào phô mai', 'nạo phô mai', 'ที่ขูดชีส', 'ที่ขูดเนย']
+  },
+  {
+    pattern: /\b(?:pisau\s+dapur|chef\s+knife|pisau\s+stainless)\b/i,
+    noun: 'Pisau Dapur Stainless Praktis',
+    englishNoun: 'Kitchen Chef Knife Stainless',
+    category: 'kitchen_prep',
+    core: ['pisau', 'dapur'],
+    multilingual: ['chef knife', 'kitchen knife', 'cleaver', 'santoku', 'pisau dapur', 'pisau stainless', 'pisau', '菜刀', '主厨刀', 'dao nhà bếp', 'dao bếp', 'มีดทำครัว', 'มีดเชฟ']
+  },
 
-  // 2. Cookware & Pots
-  { pattern: /\b(?:panci\s+listrik|panci\s+elektrik|electric\s+(?:pot|cooker|pan|skillet)|multi\s+cooker\s+mini)\b/i, noun: 'Panci Listrik Mini Serbaguna', category: 'cooking_pot', core: ['panci', 'listrik'] },
-  { pattern: /\b(?:wajan\s+telur\s+4|wajan\s+mini|frypan\s+mini|pan\s+4\s+lubang)\b/i, noun: 'Wajan Mini Telur 4 Lubang', category: 'cooking_pot', core: ['wajan', 'telur'] },
-  { pattern: /\b(?:pembuat\s+waffle|waffle\s+maker|cetakan\s+waffle)\b/i, noun: 'Alat Pembuat Waffle Mini', category: 'cooking_pot', core: ['waffle', 'maker'] },
-  { pattern: /\b(?:sutil\s+silikon|spatula\s+silikon|spatula\s+set|silicone\s+spatula)\b/i, noun: 'Sutil Silikon Set Tahan Panas', category: 'cooking_pot', core: ['sutil', 'silikon'] },
-  { pattern: /\b(?:cetakan\s+es\s+batu|ice\s+cube\s+tray|cetakan\s+es\s+silikon)\b/i, noun: 'Cetakan Es Batu Silikon', category: 'cooking_pot', core: ['cetakan', 'batu'] },
-  { pattern: /\b(?:pemanggang\s+sandwich|sandwich\s+maker|toaster\s+mini)\b/i, noun: 'Pemanggang Sandwich Mini Elektrik', category: 'cooking_pot', core: ['sandwich', 'pemanggang'] },
-  { pattern: /\b(?:cetakan\s+takoyaki|takoyaki\s+pan)\b/i, noun: 'Cetakan Takoyaki Mini', category: 'cooking_pot', core: ['cetakan', 'takoyaki'] },
-  { pattern: /\b(?:pot\s+air\s+fryer|silikon\s+air\s+fryer|wadah\s+air\s+fryer)\b/i, noun: 'Wadah Silikon Air Fryer', category: 'cooking_pot', core: ['silikon', 'fryer'] },
-  { pattern: /\b(?:termometer\s+makanan|cooking\s+thermometer)\b/i, noun: 'Termometer Makanan Digital', category: 'cooking_pot', core: ['termometer', 'makanan'] },
+  // 2. Cookware, Mini Cooking & Baking
+  {
+    pattern: /\b(?:panci\s+listrik|panci\s+elektrik|electric\s+(?:pot|cooker|pan|skillet)|multi\s+cooker\s+mini)\b/i,
+    noun: 'Panci Listrik Mini Serbaguna',
+    englishNoun: 'Mini Electric Hot Pot Cooker',
+    category: 'cooking_pot',
+    core: ['panci', 'listrik'],
+    multilingual: ['electric pot', 'electric cooker', 'hot pot', 'electric skillet', 'multi cooker', 'panci listrik', 'panci elektrik', 'panci mini', '电热锅', '电煮锅', '小电锅', 'nồi lẩu điện mini', 'nồi điện đa năng', 'หม้อไฟฟ้ามินิ', 'หม้อต้มไฟฟ้า']
+  },
+  {
+    pattern: /\b(?:wajan\s+telur\s+4|wajan\s+mini|frypan\s+mini|pan\s+4\s+lubang)\b/i,
+    noun: 'Wajan Mini Telur 4 Lubang',
+    englishNoun: '4 Hole Egg Frying Pan',
+    category: 'cooking_pot',
+    core: ['wajan', 'telur'],
+    multilingual: ['egg frying pan', '4 hole pan', 'egg pan', 'pancake pan', 'wajan telur 4', 'wajan mini', 'pan 4 lubang', '四孔煎锅', '早餐锅', 'chảo 4 lỗ', 'chảo chiên trứng', 'กระทะ 4 หลุม', 'กระทะทอดไข่']
+  },
+  {
+    pattern: /\b(?:tamagoyaki|telur\s+gulung|egg\s+roll\s+pan)\b/i,
+    noun: 'Wajan Tamagoyaki Mini Anti Lengket',
+    englishNoun: 'Japanese Tamagoyaki Omelette Pan',
+    category: 'cooking_pot',
+    core: ['wajan', 'tamagoyaki'],
+    multilingual: ['tamagoyaki pan', 'egg roll pan', 'omelette pan', 'tamagoyaki', 'wajan tamagoyaki', 'telur gulung', '玉子烧锅', '蛋卷锅', 'chảo tamagoyaki', 'chảo cuộn trứng', 'กระทะไข่ม้วน']
+  },
+  {
+    pattern: /\b(?:pembuat\s+waffle|waffle\s+maker|cetakan\s+waffle)\b/i,
+    noun: 'Alat Pembuat Waffle Mini',
+    englishNoun: 'Mini Waffle Maker Machine',
+    category: 'cooking_pot',
+    core: ['waffle', 'maker'],
+    multilingual: ['waffle maker', 'waffle iron', 'mini waffle', 'pancake maker', 'pembuat waffle', 'cetakan waffle', 'waffle', '华夫饼机', 'máy làm bánh waffle', 'máy nướng waffle', 'เครื่องทำวาฟเฟิล']
+  },
+  {
+    pattern: /\b(?:sutil\s+silikon|spatula\s+silikon|spatula\s+set|silicone\s+spatula)\b/i,
+    noun: 'Sutil Silikon Set Tahan Panas',
+    englishNoun: 'Silicone Cooking Utensils Spatula Set',
+    category: 'cooking_pot',
+    core: ['sutil', 'silikon'],
+    multilingual: ['silicone spatula', 'spatula set', 'kitchen utensils', 'turner', 'sutil silikon', 'spatula silikon', 'sutil', 'spatula', '硅胶铲', '硅胶锅铲', 'xẻng silicon', 'bộ muỗng silicon', 'ตะหลิวซิลิโคน', 'พายซิลิโคน']
+  },
+  {
+    pattern: /\b(?:cetakan\s+es\s+batu|ice\s+cube\s+tray|cetakan\s+es\s+silikon)\b/i,
+    noun: 'Cetakan Es Batu Silikon',
+    englishNoun: 'Silicone Ice Cube Tray Mold',
+    category: 'cooking_pot',
+    core: ['cetakan', 'batu'],
+    multilingual: ['ice cube tray', 'ice mold', 'ice maker', 'ice tray', 'cetakan es batu', 'cetakan es silikon', 'es batu', '制冰盒', '硅胶冰格', 'khay làm đá', 'khuôn đá silicon', 'ถาดทำน้ำแข็ง', 'แม่พิมพ์น้ำแข็ง']
+  },
+  {
+    pattern: /\b(?:pemanggang\s+sandwich|sandwich\s+maker|toaster\s+mini)\b/i,
+    noun: 'Pemanggang Sandwich Mini Elektrik',
+    englishNoun: 'Electric Sandwich Toaster Maker',
+    category: 'cooking_pot',
+    core: ['sandwich', 'pemanggang'],
+    multilingual: ['sandwich maker', 'toaster', 'sandwich toaster', 'pemanggang sandwich', 'sandwich', 'pemanggang roti', '三明治机', '轻食机', 'máy nướng sandwich', 'kẹp bánh mì', 'เครื่องทำแซนด์วิช']
+  },
+  {
+    pattern: /\b(?:cetakan\s+takoyaki|takoyaki\s+pan)\b/i,
+    noun: 'Cetakan Takoyaki Mini',
+    englishNoun: 'Takoyaki Pan Grill Maker',
+    category: 'cooking_pot',
+    core: ['cetakan', 'takoyaki'],
+    multilingual: ['takoyaki pan', 'takoyaki maker', 'takoyaki grill', 'cetakan takoyaki', 'takoyaki', '章鱼烧机', '章鱼烧盘', 'chảo làm takoyaki', 'เตาทาโกะยากิ']
+  },
+  {
+    pattern: /\b(?:pot\s+air\s+fryer|silikon\s+air\s+fryer|wadah\s+air\s+fryer)\b/i,
+    noun: 'Wadah Silikon Air Fryer',
+    englishNoun: 'Air Fryer Silicone Pot Liner Basket',
+    category: 'cooking_pot',
+    core: ['silikon', 'fryer'],
+    multilingual: ['air fryer silicone', 'silicone pot', 'air fryer liner', 'air fryer basket', 'silikon air fryer', 'wadah air fryer', 'air fryer', '空气炸锅硅胶垫', 'khay silicon nồi chiên không dầu', 'แผ่นซิลิโคนหม้อทอดไร้น้ำมัน']
+  },
+  {
+    pattern: /\b(?:termometer\s+makanan|cooking\s+thermometer)\b/i,
+    noun: 'Termometer Makanan Digital',
+    englishNoun: 'Digital Food Meat Cooking Thermometer',
+    category: 'cooking_pot',
+    core: ['termometer', 'makanan'],
+    multilingual: ['food thermometer', 'meat thermometer', 'cooking thermometer', 'termometer makanan', 'termometer digital', '食品温度计', 'nhiệt kế nấu ăn', 'nhiệt kế thực phẩm', 'ที่วัดอุณหภูมิอาหาร']
+  },
+  {
+    pattern: /\b(?:cetakan\s+sushi|sushi\s+bazooka|cetakan\s+onigiri)\b/i,
+    noun: 'Cetakan Sushi Onigiri Praktis',
+    englishNoun: 'Sushi Onigiri Maker Mold Roller',
+    category: 'cooking_pot',
+    core: ['cetakan', 'sushi'],
+    multilingual: ['sushi maker', 'sushi mold', 'onigiri mold', 'sushi bazooka', 'cetakan sushi', 'cetakan onigiri', 'sushi', 'onigiri', '寿司模具', '饭团模具', 'khuôn làm sushi', 'khuôn cơm nắm', 'แม่พิมพ์ซูชิ', 'ที่ทำซูชิ']
+  },
+  {
+    pattern: /\b(?:capitan\s+makanan|food\s+tongs|capitan\s+silikon)\b/i,
+    noun: 'Capitan Makanan Silikon Stainless',
+    englishNoun: 'Silicone Kitchen Food Tongs',
+    category: 'cooking_pot',
+    core: ['capitan', 'makanan'],
+    multilingual: ['food tongs', 'kitchen tongs', 'cooking tongs', 'capitan makanan', 'capitan silikon', 'penjepit makanan', '食品夹', '硅胶食物夹', 'kẹp gắp thức ăn', 'ที่คีบอาหาร', 'ที่คีบซิลิโคน']
+  },
 
-  // 3. Storage, Bottles & Organizers
-  { pattern: /\b(?:botol\s+minum\s+motivasi|botol\s+motivasi|botol\s+minum\s+2\s*l(?:iter)?)\b/i, noun: 'Botol Minum Motivasi 2 Liter', category: 'storage_organizer', core: ['botol', 'minum'] },
-  { pattern: /\b(?:botol\s+minyak\s+kuas|botol\s+minyak|oil\s+dispenser|spray\s+minyak)\b/i, noun: 'Botol Minyak Kuas Silikon', category: 'storage_organizer', core: ['botol', 'minyak'] },
-  { pattern: /\b(?:tempat\s+bumbu\s+putar|rak\s+bumbu\s+putar|kotak\s+bumbu\s+putar)\b/i, noun: 'Tempat Bumbu Putar Dapur', category: 'storage_organizer', core: ['bumbu', 'putar'] },
-  { pattern: /\b(?:dispenser\s+beras|tempat\s+beras|rice\s+dispenser|kotak\s+beras)\b/i, noun: 'Dispenser Beras Otomatis', category: 'storage_organizer', core: ['dispenser', 'beras'] },
-  { pattern: /\b(?:wadah\s+telur|kotak\s+telur|rolling\s+egg|rak\s+telur\s+kulkas)\b/i, noun: 'Wadah Telur Kulkas Otomatis', category: 'storage_organizer', core: ['wadah', 'telur'] },
-  { pattern: /\b(?:tutup\s+makanan\s+silikon|silicone\s+stretch\s+lid)\b/i, noun: 'Tutup Makanan Silikon Stretch', category: 'storage_organizer', core: ['tutup', 'silikon'] },
-  { pattern: /\b(?:rak\s+bumbu|rak\s+dapur\s+stainless|rak\s+gantung\s+dapur)\b/i, noun: 'Rak Bumbu Dapur Serbaguna', category: 'storage_organizer', core: ['rak', 'bumbu'] },
-  { pattern: /\b(?:rak\s+tirisan|rak\s+piring\s+wastafel|dish\s+drainer)\b/i, noun: 'Rak Tirisan Piring Wastafel', category: 'storage_organizer', core: ['rak', 'tirisan'] },
-  { pattern: /\b(?:dispenser\s+sabun\s+cuci\s+piring|soap\s+pump\s+sponge)\b/i, noun: 'Dispenser Sabun Cuci Piring Sponge', category: 'storage_organizer', core: ['dispenser', 'sabun'] },
-
-  // 4. Cleaning Gadgets
-  { pattern: /\b(?:alat\s+pel\s+spray|spray\s+mop|pel\s+semprot)\b/i, noun: 'Alat Pel Semprot Spray Mop', category: 'cleaning', core: ['pel', 'spray'] },
-  { pattern: /\b(?:pel\s+putar|spin\s+mop|pel\s+peras\s+otomatis)\b/i, noun: 'Alat Pel Peras Putar Otomatis', category: 'cleaning', core: ['pel', 'putar'] },
-  { pattern: /\b(?:pel\s+mini|sponge\s+mop\s+mini|alat\s+pel\s+meja)\b/i, noun: 'Alat Pel Mini Meja Portable', category: 'cleaning', core: ['pel', 'mini'] },
-  { pattern: /\b(?:sikat\s+pembersih\s+elektrik|electric\s+cleaning\s+brush|spin\s+scrubber)\b/i, noun: 'Sikat Pembersih Elektrik Mini', category: 'cleaning', core: ['sikat', 'elektrik'] },
-  { pattern: /\b(?:kemoceng\s+microfiber|duster\s+microfiber)\b/i, noun: 'Kemoceng Microfiber Tarik Fleksibel', category: 'cleaning', core: ['kemoceng', 'microfiber'] },
-  { pattern: /\b(?:wiper\s+kaca|pengeruk\s+pembersih\s+kaca|glass\s+wiper)\b/i, noun: 'Pengeruk Pembersih Kaca Wiper', category: 'cleaning', core: ['pembersih', 'kaca'] },
-  { pattern: /\b(?:sikat\s+kloset\s+silikon|toilet\s+brush\s+silicone)\b/i, noun: 'Sikat Kloset Silikon Praktis', category: 'cleaning', core: ['sikat', 'kloset'] },
-  { pattern: /\b(?:lint\s+roller|pembersih\s+bulu|lint\s+remover)\b/i, noun: 'Pembersih Bulu Lint Roller', category: 'cleaning', core: ['pembersih', 'bulu'] },
-  { pattern: /\b(?:nano\s+magic\s+sponge|spons\s+nano|spons\s+cuci\s+piring)\b/i, noun: 'Spons Nano Cuci Piring Magic', category: 'cleaning', core: ['spons', 'nano'] },
-  { pattern: /\b(?:vacuum\s+cleaner|penyedot\s+debu\s+mini|vacuum\s+portable)\b/i, noun: 'Penyedot Debu Mini Portable', category: 'cleaning', core: ['vacuum', 'debu'] },
-
-  // 5. Home Gadgets & Living
-  { pattern: /\b(?:pompa\s+galon|water\s+pump\s+dispenser)\b/i, noun: 'Pompa Galon Elektrik Otomatis', category: 'home_gadget', core: ['pompa', 'galon'] },
-  { pattern: /\b(?:humidifier|diffuser\s+aroma|air\s+humidifier)\b/i, noun: 'Humidifier Mini Diffuser Ruangan', category: 'home_gadget', core: ['humidifier', 'diffuser'] },
-  { pattern: /\b(?:lampu\s+sensor\s+gerak|motion\s+sensor\s+light)\b/i, noun: 'Lampu Sensor Gerak Otomatis', category: 'home_gadget', core: ['lampu', 'sensor'] },
-  { pattern: /\b(?:dispenser\s+odol|tempat\s+pasta\s+gigi)\b/i, noun: 'Dispenser Odol Otomatis Tempel', category: 'home_gadget', core: ['dispenser', 'odol'] },
-  { pattern: /\b(?:perangkap\s+nyamuk|mosquito\s+trap|lampu\s+nyamuk)\b/i, noun: 'Perangkap Nyamuk Elektrik UV', category: 'home_gadget', core: ['perangkap', 'nyamuk'] },
-  { pattern: /\b(?:tempat\s+sampah\s+sensor|smart\s+trash\s+can)\b/i, noun: 'Tempat Sampah Sensor Otomatis', category: 'home_gadget', core: ['tempat', 'sampah'] },
-  { pattern: /\b(?:timbangan\s+badan\s+digital|body\s+scale)\b/i, noun: 'Timbangan Badan Digital LED', category: 'home_gadget', core: ['timbangan', 'badan'] },
-  { pattern: /\b(?:lampu\s+tidur\s+proyektor|star\s+projector)\b/i, noun: 'Lampu Tidur Proyektor Bintang', category: 'home_gadget', core: ['lampu', 'proyektor'] },
+  // 3. Compact Kitchen Containers, Dispensers & Tabletop Accessories
+  {
+    pattern: /\b(?:botol\s+minyak\s+kuas|botol\s+minyak|oil\s+dispenser|spray\s+minyak)\b/i,
+    noun: 'Botol Minyak Kuas Silikon',
+    englishNoun: 'Oil Bottle with Silicone Brush Sprayer',
+    category: 'storage_organizer',
+    core: ['botol', 'minyak'],
+    multilingual: ['oil bottle', 'oil dispenser', 'oil sprayer', 'oil brush', 'botol minyak', 'spray minyak', 'kuas minyak', '喷油壶', '油刷瓶', 'chai đựng dầu', 'bình xịt dầu', 'ขวดน้ำมัน', 'ขวดสเปรย์น้ำมัน']
+  },
+  {
+    pattern: /\b(?:tempat\s+bumbu\s+putar|kotak\s+bumbu\s+putar|wadah\s+bumbu\s+4\s*sekat)\b/i,
+    noun: 'Tempat Bumbu Putar Dapur',
+    englishNoun: 'Rotating Spice Rack Seasoning Organizer',
+    category: 'storage_organizer',
+    core: ['bumbu', 'putar'],
+    multilingual: ['spice rack', 'rotating spice', 'seasoning organizer', 'tempat bumbu', 'wadah bumbu', 'bumbu putar', '旋转调料架', 'kệ gia vị xoay', 'hộp đựng gia vị', 'ชั้นวางเครื่องปรุงหมุนได้']
+  },
+  {
+    pattern: /\b(?:dispenser\s+beras|tempat\s+beras|rice\s+dispenser|kotak\s+beras)\b/i,
+    noun: 'Dispenser Beras Otomatis Mini',
+    englishNoun: 'Automatic Rice Dispenser Storage Box',
+    category: 'storage_organizer',
+    core: ['dispenser', 'beras'],
+    multilingual: ['rice dispenser', 'rice container', 'grain dispenser', 'dispenser beras', 'tempat beras', 'kotak beras', '米桶', '米箱', 'thùng đựng gạo', 'hộp đựng gạo thông minh', 'ถังเก็บข้าวสาร']
+  },
+  {
+    pattern: /\b(?:wadah\s+telur|kotak\s+telur|rolling\s+egg)\b/i,
+    noun: 'Wadah Telur Kulkas Otomatis',
+    englishNoun: 'Automatic Rolling Egg Storage Holder',
+    category: 'storage_organizer',
+    core: ['wadah', 'telur'],
+    multilingual: ['egg holder', 'rolling egg', 'egg dispenser', 'egg storage', 'wadah telur', 'kotak telur', 'rak telur', '滚蛋器', '鸡蛋收纳盒', 'khay đựng trứng', 'hộp đựng trứng lăn', 'ที่เก็บไข่', 'กล่องใส่ไข่']
+  },
+  {
+    pattern: /\b(?:tutup\s+makanan\s+silikon|silicone\s+stretch\s+lid)\b/i,
+    noun: 'Tutup Makanan Silikon Stretch',
+    englishNoun: 'Silicone Stretch Lids Reusable Bowl Covers',
+    category: 'storage_organizer',
+    core: ['tutup', 'silikon'],
+    multilingual: ['silicone stretch lids', 'bowl covers', 'food covers', 'silicone lids', 'tutup silikon', 'penutup makanan', 'silikon stretch', '硅胶保鲜盖', 'nắp đậy silicon', 'màng bọc thực phẩm silicon', 'ฝาซิลิโคนถนอมอาหาร']
+  },
+  {
+    pattern: /\b(?:tirisan\s+beras|wadah\s+cuci|cuci\s+beras|drain\s+basket)\b/i,
+    noun: 'Wadah Tirisan Cuci Beras Sayur',
+    englishNoun: 'Kitchen Washing Drain Basket Colander',
+    category: 'storage_organizer',
+    core: ['tirisan', 'beras'],
+    multilingual: ['drain basket', 'washing bowl', 'colander', 'strainer bowl', 'tirisan beras', 'cuci beras', 'baskom tirisan', '沥水篮', '淘米器', 'rổ rửa rau', 'thau rửa gạo', 'กะละมังล้างผัก', 'ตะกร้าล้างผัก']
+  },
+  {
+    pattern: /\b(?:wadah\s+minyak\s+jelantah|oil\s+pot\s+strainer|saringan\s+minyak)\b/i,
+    noun: 'Wadah Saringan Minyak Jelantah',
+    englishNoun: 'Stainless Steel Oil Strainer Pot',
+    category: 'storage_organizer',
+    core: ['minyak', 'jelantah'],
+    multilingual: ['oil strainer', 'oil pot', 'oil filter pot', 'wadah minyak', 'saringan minyak', 'minyak jelantah', '滤油壶', 'ca lọc dầu', 'bình lọc dầu ăn', 'หม้อกรองน้ำมัน']
+  },
+  {
+    pattern: /\b(?:dispenser\s+sabun\s+cuci\s+piring|soap\s+pump\s+sponge)\b/i,
+    noun: 'Dispenser Sabun Cuci Piring Sponge',
+    englishNoun: 'Kitchen Dish Soap Pump Dispenser with Sponge',
+    category: 'storage_organizer',
+    core: ['dispenser', 'sabun'],
+    multilingual: ['soap pump', 'soap dispenser', 'sponge holder', 'dish soap', 'dispenser sabun', 'tempat sabun', 'sabun cuci piring', '皂液盒', '洗碗按压器', 'hộp đựng nước rửa chén', 'กล่องกดน้ำยาล้างจาน']
+  },
+  {
+    pattern: /\b(?:nano\s+magic\s+sponge|spons\s+nano|spons\s+cuci\s+piring)\b/i,
+    noun: 'Spons Nano Cuci Piring Magic',
+    englishNoun: 'Magic Melamine Nano Cleaning Sponge',
+    category: 'storage_organizer',
+    core: ['spons', 'nano'],
+    multilingual: ['magic sponge', 'nano sponge', 'cleaning sponge', 'melamine sponge', 'spons nano', 'spons cuci piring', 'spons magic', '魔术海绵', '纳米海绵', 'miếng bọt biển nano', 'ฟองน้ำนาโน']
+  },
 ];
 
 export function extractCoreProductInfo(rawTitle = '', rawDesc = '', rawUrl = '') {
@@ -1021,18 +2553,30 @@ export function extractCoreProductInfo(rawTitle = '', rawDesc = '', rawUrl = '')
 
   for (const anchor of PRODUCT_ANCHORS) {
     if (anchor.pattern.test(normalized)) {
+      const allWords = Array.from(new Set([
+        ...(anchor.core || []),
+        ...(anchor.multilingual || []),
+      ]));
+      const englishNoun = anchor.englishNoun || anchor.noun;
+
       return {
         cleanTitle: cleaned,
         coreProductNoun: anchor.noun,
+        englishNoun,
         category: anchor.category,
-        coreWords: anchor.core,
+        coreWords: allWords,
+        multilingualWords: allWords,
         searchQueries: [
-          `${anchor.noun} review cara pakai`,
-          `${anchor.noun} demo peragaan`,
-          `${anchor.noun} review pemakaian`,
-          `${anchor.noun} unboxing review`,
-          `${anchor.noun} tes fungsi`,
+          `"${anchor.noun}" review`,
+          `"${englishNoun}" review`,
+          `"${anchor.noun}" demo produk`,
+          `"${anchor.noun}" test pemakaian`,
+          `"${englishNoun}" demo`,
+          `"${englishNoun}" hands on`,
+          `"${anchor.noun}" unboxing review`,
+          `"${englishNoun}" "b-roll"`,
           anchor.noun,
+          englishNoun,
         ]
       };
     }
@@ -1047,40 +2591,47 @@ export function extractCoreProductInfo(rawTitle = '', rawDesc = '', rawUrl = '')
   ];
   const words = normalized.split(/\s+/).filter(w => w.length >= 3 && !stopWords.includes(w));
   const fallbackNoun = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || cleaned.slice(0, 30) || 'Produk Praktis';
-  const fallbackWords = words.slice(0, 2);
+  const fallbackWords = words.slice(0, 3);
 
   return {
     cleanTitle: cleaned,
     coreProductNoun: fallbackNoun,
     category: 'general_gadget',
     coreWords: fallbackWords.length > 0 ? fallbackWords : ['produk'],
+    multilingualWords: fallbackWords.length > 0 ? fallbackWords : ['produk'],
     searchQueries: [
-      `${fallbackNoun} review cara pakai`,
-      `${fallbackNoun} demo peragaan`,
-      `${fallbackNoun} review pemakaian`,
-      `${fallbackNoun} unboxing`,
+      `"${fallbackNoun}" review`,
+      `"${fallbackNoun}" demo produk`,
+      `"${fallbackNoun}" test pemakaian`,
+      `"${fallbackNoun}" hands on`,
+      `"${fallbackNoun}" unboxing review`,
+      `"${fallbackNoun}" "b-roll"`,
       fallbackNoun,
     ]
   };
 }
 
-export function isTitleMatchingProduct(candidateTitle, productWords = []) {
-  let normTitle = normalizeText(candidateTitle || '');
-  
-  // Cross-category exclusion for household / gadget products
-  const crossCategoryExclusions = [
-    'las', 'pagar', 'bengkel', 'servis hp', 'servis motor', 'knalpot', 'mobil', 'motor', 'sepeda',
-    'gameplay', 'game', 'manga', 'anime', 'vlog', 'skincare', 'makeup', 'gamis', 'hijab', 'outfit'
-  ];
+export function isTitleMatchingProduct(candidateTitle, productWords = [], extraMeta = {}) {
+  const normTitle = normalizeText(candidateTitle || '');
+  const normDesc = normalizeText(extraMeta?.description || '').slice(0, 800);
+  const normTags = Array.isArray(extraMeta?.tags)
+    ? extraMeta.tags.map((t) => normalizeText(String(t))).join(' ')
+    : '';
+  const combinedText = `${normTitle} ${normDesc} ${normTags}`;
 
-  if (crossCategoryExclusions.some(badWord => normTitle.includes(badWord))) {
+  // Cross-category exclusion for non-kitchen / automotive / phone / clothing / personal vlog / recipes / food / drinks
+  const crossCategoryRegex = /\b(?:las|pagar|bengkel|servis hp|servis motor|knalpot|mobil|motor|sepeda|gameplay|game|manga|anime|vlog|skincare|makeup|gamis|hijab|outfit|resep|recipe|mukbang|kuliner|jajanan|street food|makanan viral|minuman viral|boba milk tea|camilan)\b/i;
+  if (crossCategoryRegex.test(normTitle)) {
     return false;
   }
 
-  if (!Array.isArray(productWords) || productWords.length === 0) return true;
-
-  const significant = productWords.filter(w => w.length >= 3);
-  if (significant.length === 0) return true;
+  // Visual Search / Image verification bypass:
+  // When candidates are found via Reverse Image Search, Bing Visual Search, Gemini Vision queries,
+  // or when an official product image is being verified, the title may be OEM / global English.
+  // We pass them through Filter 1 so AI Vision can verify physical product correspondence directly.
+  if (extraMeta?.isVisualSearch || extraMeta?.skipKeywordMatch || !Array.isArray(productWords) || productWords.length === 0) {
+    return true;
+  }
 
   // Normalize common Indonesian/English affiliate product synonyms
   const synonymMap = {
@@ -1091,17 +2642,27 @@ export function isTitleMatchingProduct(candidateTitle, productWords = []) {
     'mop': 'pel',
     'blender': 'chopper',
     'penggiling': 'chopper',
+    'shears': 'gunting',
+    'scale': 'timbangan',
+    'juicer': 'pemeras',
   };
 
+  let enrichedCombined = combinedText;
   for (const [syn, base] of Object.entries(synonymMap)) {
-    if (normTitle.includes(syn)) {
-      normTitle += ` ${base}`;
+    if (enrichedCombined.includes(syn)) {
+      enrichedCombined += ` ${base}`;
     }
   }
 
-  const matched = significant.filter(w => normTitle.includes(w.toLowerCase()));
-  const minRequired = Math.min(2, significant.length);
-  return matched.length >= minRequired;
+  // Check if at least ONE significant product keyword matches in combinedText
+  for (const word of productWords) {
+    const w = normalizeText(word);
+    if (w.length >= 2 && enrichedCombined.includes(w)) {
+      return true; // Match found!
+    }
+  }
+
+  return false;
 }
 
 function titleFromShopeeUrl(productUrl = '') {
@@ -1122,36 +2683,69 @@ function cleanDescription(value = '') {
 }
 
 function normalizeText(value = '') {
-  return value.toString().toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  return value.toString().toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /**
- * Searches and returns the best exact Shopee product URL matching the video's detected product.
- * Uses DoH-powered DuckDuckGo and household product keywords.
+ * Membangun URL pencarian Shopee Indonesia yang bersih, akurat, dan bebas captcha.
+ * Link pencarian langsung membuka aplikasi Shopee dan menampilkan daftar produk terkait dengan rating/harga terbaik
+ * tanpa terhalang slide puzzle / captcha bot protection seperti pada link produk langsung.
+ * @param {string} productTitle 
+ * @param {string} detectedBrand 
+ * @returns {string}
  */
-export async function findMatchingShopeeProductUrl(productTitle, detectedBrand = '') {
-  if (!productTitle || typeof productTitle !== 'string') return '';
-  const cleanTitleStr = cleanTitle(productTitle) || productTitle.trim();
-  const brand = (detectedBrand && detectedBrand !== 'none' && !detectedBrand.includes('Terdeteksi')) ? detectedBrand.trim() : '';
-  const searchPhrase = `${brand ? `${brand} ` : ''}${cleanTitleStr}`.trim();
-
-  console.log(`[Discovery] Mencari link Shopee yang cocok untuk produk video: "${searchPhrase}"...`);
-  try {
-    const results = await searchDuckDuckGoShopee(searchPhrase);
-    if (results && results.length > 0) {
-      const match = results.find(r => isShopeeProductUrl(r.url));
-      if (match) {
-        console.log(`[Discovery] ✅ Menemukan link Shopee cocok: "${match.title}" -> ${match.url}`);
-        return match.url;
-      }
-    }
-  } catch (err) {
-    console.warn(`[Discovery] Gagal mencari link Shopee via DuckDuckGo:`, err.message);
+export function buildShopeeSearchUrl(productTitle = '', detectedBrand = '') {
+  if (!productTitle || typeof productTitle !== 'string') {
+    return 'https://shopee.co.id';
   }
 
-  // Fallback: direct search page URL with refined household keyword
-  const fallbackUrl = `https://shopee.co.id/search?keyword=${encodeURIComponent(`${searchPhrase} produk rumah tangga`)}`;
-  console.log(`[Discovery] Menggunakan fallback link Shopee: ${fallbackUrl}`);
-  return fallbackUrl;
+  // 1. Coba ambil kata kunci inti produk dari PRODUCT_ANCHORS
+  const coreInfo = extractCoreProductInfo(productTitle);
+  let baseKeyword = '';
+
+  if (coreInfo?.coreProductNoun && coreInfo.coreProductNoun !== 'Produk Praktis') {
+    baseKeyword = coreInfo.coreProductNoun;
+  } else {
+    // 2. Bersihkan kata-kata clickbait, promo, review, dan stop words
+    const cleaned = cleanTitle(productTitle) || productTitle.trim();
+    const stopWords = new Set([
+      'dan', 'yang', 'untuk', 'dengan', 'dari', 'bisa', 'anti', 'super', 'termurah',
+      'viral', 'original', 'promo', 'murah', 'ready', 'stock', 'import', 'impor',
+      'terlaris', 'terbaru', 'terpercaya', 'kualitas', 'garansi', 'resmi', 'official',
+      'bisa', 'cod', 'gratis', 'ongkir', 'diskon', 'terlengkap', 'store', 'shop', 'indonesia',
+      'review', 'jujur', 'banget', 'ini', 'itu', 'pada', 'saat', 'dalam', 'fungsi', 'maksimal',
+      'alternatif', 'hemat', 'solusi', 'instan', 'rekomendasi', 'spill', 'racun'
+    ]);
+    const words = cleaned
+      .replace(/\[[^\]]*\]/g, ' ')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter(w => (w.length >= 2 || /\d/.test(w)) && !stopWords.has(w.toLowerCase()));
+
+    // Ambil 3 sampai 5 kata kunci paling esensial (optimal untuk mesin pencari Shopee)
+    baseKeyword = words.slice(0, 5).join(' ');
+  }
+
+  // 3. Tambahkan merek produk jika terdeteksi dan valid
+  const brandClean = (detectedBrand && detectedBrand !== 'none' && !detectedBrand.includes('Terdeteksi'))
+    ? detectedBrand.trim()
+    : '';
+
+  let finalKeyword = baseKeyword || cleanTitle(productTitle) || productTitle.trim().slice(0, 40);
+  if (brandClean && !finalKeyword.toLowerCase().includes(brandClean.toLowerCase())) {
+    finalKeyword = `${brandClean} ${finalKeyword}`;
+  }
+
+  finalKeyword = finalKeyword.replace(/\s+/g, ' ').trim();
+
+  return `https://shopee.co.id/search?keyword=${encodeURIComponent(finalKeyword)}`;
+}
+
+export async function findMatchingShopeeProductUrl(productTitle, detectedBrand = '', videoDesc = '') {
+  if (!productTitle || typeof productTitle !== 'string') return '';
+  const searchUrl = buildShopeeSearchUrl(productTitle, detectedBrand);
+  console.log(`[Discovery] ✅ Menggunakan link pencarian Shopee akurat (anti-captcha): ${searchUrl}`);
+  return searchUrl;
 }
 

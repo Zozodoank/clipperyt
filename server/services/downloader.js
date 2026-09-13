@@ -175,6 +175,89 @@ export function extractVideoId(url) {
   return match ? match[1] : null;
 }
 
+// ── Clean YouTube Query Helper & Banned/Negative Operators ──────────────────
+
+export const DIRTY_NEGATIVE_OPERATORS = [
+  '-cara',
+  '-tutorial',
+  '-diy',
+  '-resep',
+  '-recipe',
+  '-mukbang',
+  '-makanan',
+  '-minuman',
+  '-kuliner',
+  '-jajanan',
+  '-streetfood',
+  '-vlog',
+  '-repair',
+  '-blackstone',
+  '-weber',
+  '-smoker',
+  '-barbecue',
+  '-pabrik',
+  '-manufacturing',
+  '-factory',
+  '-slideshow',
+  '-ternak',
+  '-pakan',
+  '-limbah',
+  '-chopper',
+  '-choper',
+  '-selep',
+  '-perontok',
+  '-pemanen',
+  '-traktor',
+  '-silase'
+];
+
+export function buildCleanYouTubeQuery(baseQuery) {
+  if (!baseQuery) return '';
+  // 1. Strip repair / broken item / disassembly / recipe / mukbang / cara / tutorial / DIY / factory / bulky grill / agricultural keywords that derail product discovery
+  let cleaned = String(baseQuery)
+    .replace(/\b(?:cara|tutorial|diy|how\s+to|do\s+it\s+yourself|perbaikan|penggantian|pergantian|mengganti|rusak|service|servis|repair|reparasi|bongkar|resep|recipe|mukbang|kuliner|blackstone|weber|smoker|pabrik|factory|manufacturing|pakan|ternak|limbah|chopper|choper|selep|perontok|pemanen|traktor)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 2. Append minimal negative operators if not already included
+  const existingLower = cleaned.toLowerCase();
+  const toAdd = DIRTY_NEGATIVE_OPERATORS.filter(op => !existingLower.includes(op.toLowerCase()));
+  if (toAdd.length > 0) {
+    cleaned = `${cleaned} ${toAdd.join(' ')}`;
+  }
+  return cleaned.trim();
+}
+
+// ── Google YouTube Data API v3 Search Helper ───────────────────────────────
+
+async function searchWithYouTubeDataApi(query, limit = 10) {
+  const apiKey = (process.env.YOUTUBE_API_KEY || process.env.GOOGLE_YOUTUBE_API_KEY)?.trim();
+  if (!apiKey) return null;
+
+  try {
+    const cleanQuery = buildCleanYouTubeQuery(query);
+    console.log(`[Downloader] Searching YouTube Data API v3: "${cleanQuery}" (type=video&videoDefinition=high)`);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDefinition=high&maxResults=${limit}&q=${encodeURIComponent(cleanQuery)}&key=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const items = data.items || [];
+    return items
+      .filter(item => item.id?.videoId)
+      .map(item => ({
+        id: item.id.videoId,
+        title: item.snippet?.title || 'YouTube Video',
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        duration: 0,
+        channel: item.snippet?.channelTitle || '',
+        description: (item.snippet?.description || '').slice(0, 500)
+      }))
+      .slice(0, limit);
+  } catch (e) {
+    return null;
+  }
+}
+
 // ── RapidAPI Search Helper ──────────────────────────────────────────────────
 
 async function searchWithRapidApi(query, limit = 10) {
@@ -183,8 +266,9 @@ async function searchWithRapidApi(query, limit = 10) {
   if (!apiKey) return null;
 
   try {
-    console.log(`[Downloader] Searching YouTube via RapidAPI: "${query}"`);
-    const res = await fetch(`https://${host}/search?query=${encodeURIComponent(query)}`, {
+    const cleanQuery = buildCleanYouTubeQuery(query);
+    console.log(`[Downloader] Searching YouTube via RapidAPI: "${cleanQuery}" (type=video&videoDefinition=high)`);
+    const res = await fetch(`https://${host}/search?query=${encodeURIComponent(cleanQuery)}&type=video&videoDefinition=high`, {
       headers: {
         'x-rapidapi-key': apiKey,
         'x-rapidapi-host': host
@@ -204,7 +288,7 @@ async function searchWithRapidApi(query, limit = 10) {
         channel: item.channelTitle || item.author || '',
         description: (item.description || '').slice(0, 500)
       }))
-      .filter(item => item.id && item.url && (item.duration === 0 || (item.duration >= 300 && item.duration <= 900)))
+      .filter(item => item.id && item.url && (item.duration === 0 || (item.duration >= 35 && item.duration <= 900)))
       .slice(0, limit);
   } catch (e) {
     return null;
@@ -385,8 +469,10 @@ async function downloadWithYouTubeMediaDownloader(url, outputPath, onProgress, {
 
 async function searchDirectYouTubeWeb(query, limit = 10) {
   try {
-    // &sp=EgQQASgB enforces YouTube duration filter: Medium (4-20 minutes), eliminating shorts (<1 min)
-    const res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgQQASgB`, {
+    const cleanQuery = buildCleanYouTubeQuery(query);
+
+    // sp=EgIQAQ%253D%253D enforces YouTube Video filter (all durations, from 35s upwards)
+    let res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQuery)}&sp=EgIQAQ%253D%253D`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
         'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
@@ -394,11 +480,32 @@ async function searchDirectYouTubeWeb(query, limit = 10) {
       signal: AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
-    const html = await res.text();
-    const match = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/ytInitialData\s*=\s*({.+?});/);
-    if (!match) return null;
-    const data = JSON.parse(match[1]);
-    const sections = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+    let html = await res.text();
+    let match = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/ytInitialData\s*=\s*({.+?});/);
+    let parsedData = match ? JSON.parse(match[1]) : null;
+    let sections = parsedData?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+    let hasVideos = sections.some(sec => (sec.itemSectionRenderer?.contents || []).some(item => item.videoRenderer));
+
+    // Fallback: If filtered query returned 0 items, query standard search without sp
+    if (!hasVideos) {
+      const fallbackRes = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQuery)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+          'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (fallbackRes.ok) {
+        html = await fallbackRes.text();
+        match = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/ytInitialData\s*=\s*({.+?});/);
+        if (match) {
+          parsedData = JSON.parse(match[1]);
+          sections = parsedData?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+        }
+      }
+    }
+
+    if (!parsedData) return null;
     const videos = [];
     for (const sec of sections) {
       const items = sec.itemSectionRenderer?.contents || [];
@@ -413,8 +520,8 @@ async function searchDirectYouTubeWeb(query, limit = 10) {
           else if (parts.length === 2) duration = (parts[0] * 60) + parts[1];
           else if (parts.length === 1 && parts[0] > 0) duration = parts[0];
 
-          // Filter out videos with known duration < 5 min (300s) or > 15 min (900s)
-          if (duration > 0 && (duration < 300 || duration > 900)) {
+          // Filter out videos with known duration < 35s or > 15 min (900s)
+          if (duration > 0 && (duration < 35 || duration > 900)) {
             continue;
           }
 
@@ -441,7 +548,7 @@ async function searchDirectYouTubeWeb(query, limit = 10) {
 }
 
 /**
- * Searches YouTube candidates using Native Web Search, RapidAPI, or yt-dlp.
+ * Searches YouTube candidates using YouTube Data API v3, RapidAPI, Native Web Search, or yt-dlp.
  * @param {string} query - Search query text
  * @param {{ limit?: number, onProgress?: Function }} options
  * @returns {Promise<Array<{ id: string, title: string, url: string, duration: number, channel: string, description: string }>>}
@@ -455,24 +562,31 @@ export async function searchYouTubeVideos(query, { limit = 10, onProgress = () =
     }
   };
 
-  const safeLimit = Math.max(1, Math.min(20, Number(limit) || 10));
+  const safeLimit = Math.max(1, Math.min(25, Number(limit) || 16));
 
-  // 1. Prioritize RapidAPI search if key is configured
+  // 1. Prioritize YouTube Data API v3 if key is configured
+  const ytDataResults = await searchWithYouTubeDataApi(query, safeLimit);
+  if (ytDataResults && ytDataResults.length > 0) {
+    return ytDataResults;
+  }
+
+  // 2. Prioritize RapidAPI search if key is configured
   const rapidResults = await searchWithRapidApi(query, safeLimit);
   if (rapidResults && rapidResults.length > 0) {
     return rapidResults;
   }
 
-  // 2. Direct fast native YouTube web search parser (0-second lag, 0 external binary dependency)
+  // 3. Direct fast native YouTube web search parser (0-second lag, 0 external binary dependency)
   const webResults = await searchDirectYouTubeWeb(query, safeLimit);
   if (webResults && webResults.length > 0) {
     return webResults;
   }
 
-  // 3. Fallback to direct yt-dlp search
+  // 4. Fallback to direct yt-dlp search
   try {
+    const cleanQuery = buildCleanYouTubeQuery(query);
     const ytDlpPath = await getYtDlpPath(reportProgress);
-    const searchTarget = `ytsearch${safeLimit}:${query}`;
+    const searchTarget = `ytsearch${safeLimit}:${cleanQuery}`;
 
     reportProgress({
       step: 'auto_youtube_search',
@@ -487,7 +601,7 @@ export async function searchYouTubeVideos(query, { limit = 10, onProgress = () =
       '--dump-json',
       '--no-playlist',
       '--skip-download',
-      '--match-filter', 'duration >= 300 & duration <= 900',
+      '--match-filter', 'duration >= 60 & duration <= 900',
       searchTarget
     ];
 
@@ -517,7 +631,7 @@ export async function searchYouTubeVideos(query, { limit = 10, onProgress = () =
           channel: item.uploader || item.channel || '',
           description: (item.description || '').slice(0, 500),
         }))
-        .filter((item) => item.id && item.url && (item.duration === 0 || (item.duration >= 300 && item.duration <= 900)));
+        .filter((item) => item.id && item.url && (item.duration === 0 || (item.duration >= 35 && item.duration <= 900)));
     }
   } catch (err) {
     console.warn(`[Downloader] yt-dlp search fallback warning: ${err.message}`);

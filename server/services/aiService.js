@@ -131,10 +131,13 @@ function getOpenRouterKeys(apiKeyOverride) {
 let currentOpenRouterKeyIndex = 0;
 
 const defaultGeminiDirectModels = [
-  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
   'gemini-flash-latest',
-  'gemini-3.7-flash',
+  'gemini-3.1-flash-lite',
   'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
+  'gemini-3.8-flash',
 ];
 
 export function getDirectGeminiApiKey(apiKeyOverride) {
@@ -384,7 +387,15 @@ CRITICAL RULES FOR REJECTION OUTPUT:
 1. "isExactProductMatch": Set to true if the item demonstrated in the video matches "${coreNoun}", even if rejected for policy. Set to false ONLY if the product is physically different.
 2. "reason": DILARANG KERAS MENGGABUNGKAN DUA ALASAN BERBEDA (seperti "produk tidak cocok dengan menampilkan wajah atau vlogger")! Berikan SATU alasan tunggal yang presisi. Stiker kartun, animasi, atau emoji BUKAN vlogger manusia!`;
 
-  const candidateModels = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.5-flash'];
+  const candidateModels = [
+    'gemini-3.5-flash-lite',
+    'gemini-flash-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash'
+  ];
   let parsed = null;
   let activeGeminiModel = candidateModels[0];
   let lastGeminiErr = null;
@@ -1411,15 +1422,17 @@ export async function generateAdAdvisorScriptWithAI({
 
   const effectiveTitle = (productTitle || '').trim() || videoMetadata?.title || 'Produk Viral Shopee';
   const effectiveDesc = (productDescription || '').trim();
-  const targetDuration = Math.max(18, Math.min(32, Math.round(Number(segmentDuration) || 24)));
+  const targetDuration = Math.max(30, Math.min(45, Math.round(Number(segmentDuration) || 33)));
   const effectiveSceneSec = Math.max(2.5, Math.min(4.5, Number(sceneDuration) || 3.3));
-  const sceneCount = Math.max(5, Math.min(8, Math.round(targetDuration / effectiveSceneSec)));
-  // Natural Indonesian commercial speaking rate: ~1.7 - 1.9 words per second (~105 - 115 WPM)
-  // For a 24s video: min ~36 words, ideal ~42 words, max ~48 words (~5-6 words per scene).
-  // AVOID overly long scripts that force the voiceover to speak unnaturally fast!
-  const targetWords = Math.round(targetDuration * 1.8);
-  const minWords = Math.round(targetDuration * 1.5);
-  const maxWords = Math.round(targetDuration * 2.0);
+  const sceneCount = Math.max(7, Math.min(12, Math.round(targetDuration / effectiveSceneSec)));
+  // Natural Indonesian commercial speaking rate in Edge-TTS & Gemini TTS: ~2.3 - 2.5 words per second (~140 - 150 WPM).
+  // For a 30-35s video, target speech duration is ~targetDuration - 1.5s (leaving 1-2s clean hold for the CTA).
+  // Target ~72-80 words (~7-8 words per ~3.3s scene, ~480-550 characters total).
+  // This ensures the voiceover comfortably fills the entire 30-35s runtime without lagging or finishing prematurely!
+  const targetSpeechSec = Math.max(28, targetDuration - 1.5);
+  const targetWords = Math.round(targetSpeechSec * 2.35);
+  const minWords = Math.round(targetSpeechSec * 2.15);
+  const maxWords = Math.round(targetSpeechSec * 2.55);
 
   const systemPrompt = `You are a Senior Creative Director and Ad Advisor specializing in Indonesian Short-Form Affiliate Video Marketing (Shopee Video, TikTok Shop, Instagram Reels).
 
@@ -1456,8 +1469,8 @@ CRITICAL 4-BEAT SHOPEE FYP FORMULA:
 
 CRITICAL DURATION & WORD-COUNT TIMING RULES:
 - The final video duration is EXACTLY ${targetDuration} seconds (${sceneCount} fast scenes of ~${effectiveSceneSec.toFixed(1)}s each).
-- Total voiceover script MUST contain between ${minWords} and ${maxWords} words (Target ideal: exactly ~${targetWords} words, only ~5-6 punchy words per ~${effectiveSceneSec.toFixed(1)}s scene).
-- DILARANG MEMBUAT NASKAH TERLALU PANJANG! Naskah yang terlalu panjang akan memaksa narator berbicara terlalu cepat seperti terburu-buru dan tidak enak didengar.
+- Total voiceover script MUST contain between ${minWords} and ${maxWords} words (Target ideal: exactly ~${targetWords} words, ~7-8 punchy conversational words per ~${effectiveSceneSec.toFixed(1)}s scene).
+- DILARANG MEMBUAT NASKAH TERLALU PENDEK (di bawah ${minWords} kata) KARENA AKAN MEMBUAT SUARA DIBACA TERLALU LAMBAT! Naskah HARUS cukup panjang agar dibaca mengalir natural.
 - Jaga agar setiap kalimat singkat, padat, lugas, santai, dan to-the-point (~5-6 kata per adegan).
 
 1. 'sampleContext':
@@ -1534,7 +1547,7 @@ Buat Kotak Scene, Sample Context, Naskah Voiceover Ad Advisor, dan AI Studio pro
 
 PENTING - ATURAN DURASI, TIMESTAMP & TEMPO NASKAH:
 1. Pada bagian 'Sample Context' (baik di JSON maupun di prompt AI Studio), WAJIB sertakan durasi voice over sesuai timestamp detik terakhir di Speaker 1, misal: "Durasi voice over 30 detik. Iklan affiliate viral...".
-2. Naskah voiceover HARUS pas ${minWords} s/d ${maxWords} kata (sekitar 12-14 kata tiap scene 5 detik) agar pas dengan durasi video tanpa perlu diperlambat!
+2. Naskah voiceover HARUS pas ${minWords} s/d ${maxWords} kata (sekitar 7-8 kata tiap scene ~${effectiveSceneSec.toFixed(1)} detik) agar pas dengan durasi video tanpa perlu diperlambat!
 3. Setiap baris naskah voiceover dan prompt AI Studio WAJIB diawali penanda waktu video, misal: [00:00], [00:05], [00:10], [00:15], [00:20], [00:25], [00:30], [00:35], dst.
 4. JANGAN gunakan nama karakter suara khusus (cukup gunakan header "Speaker 1").
 5. DILARANG KERAS menggunakan kata "kece"! Gunakan kata seperti keren, elegan, praktis, atau bagus.

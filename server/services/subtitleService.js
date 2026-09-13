@@ -23,6 +23,7 @@ export function generateAssSubtitles(scriptText, totalDurationSec, assOutputPath
       assOutputPath,
       lexicon: options.lexicon || {},
       scriptText,
+      videoDurationSec: options.videoDurationSec,
     });
     if (ok) return assOutputPath;
   }
@@ -190,8 +191,11 @@ export function generateAssSubtitles(scriptText, totalDurationSec, assOutputPath
     // Ensure minimum display duration so quick phrases are readable (0.8s)
     const minDisplaySec = 0.8;
     const maxBoundary = (nextAnchor !== undefined && nextAnchor !== null) ? nextAnchor : safeTotalDuration;
+    const finalEndingSec = (options && options.videoDurationSec && Number(options.videoDurationSec) > safeTotalDuration)
+      ? Number(options.videoDurationSec)
+      : safeTotalDuration;
     const endSec = i === rawPhrases.length - 1
-      ? safeTotalDuration
+      ? finalEndingSec
       : Math.min(maxBoundary, startSec + Math.max(minDisplaySec, proportionalDuration));
 
     currentCursor = endSec;
@@ -289,7 +293,7 @@ function normalizeSubtitleWord(w, customLexicon = {}) {
  * - Balanced 3 to 5 word chunking (never leaves awkward 1-word orphans like "ini" or "kuning").
  * - Seamless inter-phrase continuity avoiding rapid flickering black pauses.
  */
-export function generateAssSubtitlesFromWordBoundaries({ wordBoundaries, totalDurationSec, assOutputPath, lexicon = {}, scriptText = '' }) {
+export function generateAssSubtitlesFromWordBoundaries({ wordBoundaries, totalDurationSec, assOutputPath, lexicon = {}, scriptText = '', videoDurationSec = null }) {
   if (!Array.isArray(wordBoundaries) || wordBoundaries.length === 0) {
     return false;
   }
@@ -373,11 +377,14 @@ export function generateAssSubtitlesFromWordBoundaries({ wordBoundaries, totalDu
     }
   }
 
-  // 4. Pin the final CTA subtitle right until the end of the video (safeTotalDuration).
+  // 4. Pin the final CTA subtitle right until the end of the video.
   // Ensures the high-converting Call To Action remains on screen with zero empty void at the end!
+  const effectiveEndDuration = (videoDurationSec && Number(videoDurationSec) > safeTotalDuration)
+    ? Number(videoDurationSec)
+    : safeTotalDuration;
   if (phrases.length > 0) {
     const lastPhrase = phrases[phrases.length - 1];
-    lastPhrase.endSec = Math.max(lastPhrase.endSec, safeTotalDuration);
+    lastPhrase.endSec = Math.max(lastPhrase.endSec, effectiveEndDuration);
   }
 
   // 5. Ensure all phrases have strictly valid timestamps (startSec < endSec)
