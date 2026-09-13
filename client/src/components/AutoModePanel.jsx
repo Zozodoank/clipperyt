@@ -69,7 +69,7 @@ export default function AutoModePanel({ settings, onHistoryRefresh }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           maxJobs: 10,
-          niche: 'kitchen_home',
+          niche: 'smartphone_review',
           candidateDepth: { shopee: 5, youtube: 10 },
           options: {
             hflip: settings.hflip !== undefined ? settings.hflip : false,
@@ -109,18 +109,24 @@ export default function AutoModePanel({ settings, onHistoryRefresh }) {
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-5 shadow-xl border border-slate-700/60">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="glass-panel rounded-2xl p-5 shadow-xl border border-red-500/20 bg-slate-900/80 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl pointer-events-none" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
         <div>
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-400" />
-            <h2 className="text-lg font-black text-white">Auto Mode</h2>
+            <div className="p-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30">
+              <Zap className="w-5 h-5 text-red-400 fill-current" />
+            </div>
+            <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <span>Auto Review HP</span>
+              <span className="text-xs font-semibold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">Android 16+ &bull; 2 Jt+</span>
+            </h2>
             <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${statusClass(run.status)}`}>
               {statusLabel(run.status)}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Cari produk Shopee asli + video YouTube faceless, lalu buat Stage 1 otomatis sampai history siap voiceover.
+          <p className="text-xs text-slate-400 mt-1 font-medium">
+            Otomatis cari smartphone trending 2 jutaan+, kurasi footage 16:9 YouTube, buat naskah review spesifikasi 5-beat dengan uji kamera depan &amp; belakang.
           </p>
         </div>
 
@@ -129,7 +135,7 @@ export default function AutoModePanel({ settings, onHistoryRefresh }) {
             type="button"
             onClick={handleStart}
             disabled={isRunning || isStarting}
-            className="min-h-[56px] px-5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-black text-sm flex items-center justify-center gap-2 border border-emerald-300/30 shadow-lg shadow-emerald-900/20 transition-all"
+            className="min-h-[56px] px-5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-black text-sm flex items-center justify-center gap-2 border border-red-400/30 shadow-lg shadow-red-900/30 transition-all active:scale-[0.98]"
           >
             {isStarting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5 fill-current" />}
             <span>Start Auto</span>
@@ -139,7 +145,7 @@ export default function AutoModePanel({ settings, onHistoryRefresh }) {
             type="button"
             onClick={handleStop}
             disabled={!isRunning || isStopping}
-            className="min-h-[56px] px-5 rounded-xl bg-red-500 hover:bg-red-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-black text-sm flex items-center justify-center gap-2 border border-red-300/30 shadow-lg shadow-red-900/20 transition-all"
+            className="min-h-[56px] px-5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:bg-slate-850 disabled:text-slate-600 disabled:border-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 border border-slate-700 shadow-md transition-all active:scale-[0.98]"
           >
             {isStopping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Square className="w-5 h-5 fill-current" />}
             <span>Stop</span>
@@ -155,7 +161,7 @@ export default function AutoModePanel({ settings, onHistoryRefresh }) {
 
       <div className="mt-4">
         <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-shopee-500 transition-all" style={{ width: `${Math.max(0, Math.min(100, run.progress || 0))}%` }} />
+          <div className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all" style={{ width: `${Math.max(0, Math.min(100, run.progress || 0))}%` }} />
         </div>
         <div className="mt-2 flex items-start gap-2 text-xs text-slate-300">
           {run.status === 'error'

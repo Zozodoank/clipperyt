@@ -70,9 +70,9 @@ export default function InputCard({
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden">
+    <div className="glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden border border-red-500/20">
       {/* Decorative gradient blur */}
-      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
@@ -81,11 +81,11 @@ export default function InputCard({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-shopee-500" />
-              Source Video & Informasi Produk
+              <Zap className="w-5 h-5 text-red-500 fill-current" />
+              Source Video &amp; Informasi Smartphone
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Masukkan detail produk agar AI menghasilkan naskah yang akurat dan persuasif.
+              Masukkan tipe smartphone (Rp 2 Juta+, Android 16+) &amp; URL YouTube untuk review spesifikasi 16:9 HD.
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export default function InputCard({
             onClick={onOpenSettings}
             className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/70 transition-colors"
           >
-            <Sliders className="w-3.5 h-3.5 text-shopee-500" />
+            <Sliders className="w-3.5 h-3.5 text-red-400" />
             <span>Settings</span>
           </button>
         </div>
@@ -169,10 +169,10 @@ export default function InputCard({
         <div>
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ShoppingBag className="w-4 h-4 text-shopee-500" />
-              Affiliate / Link Produk (Deskripsi Video) <span className="text-shopee-500">*</span>
+              <ShoppingBag className="w-4 h-4 text-red-400" />
+              Affiliate / Link Produk (Deskripsi Video) <span className="text-red-400">*</span>
             </span>
-            <span className="text-[11px] font-normal text-slate-400">Diarahkan di CTA naskah & deskripsi</span>
+            <span className="text-[11px] font-normal text-slate-400">Diarahkan di CTA naskah &amp; deskripsi</span>
           </label>
           <input
             type="text"
@@ -180,7 +180,7 @@ export default function InputCard({
             placeholder="https://tokopedia.link/... atau https://shope.ee/..."
             value={formData.shopeeLink}
             onChange={(e) => setFormData({ ...formData, shopeeLink: e.target.value })}
-            className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-shopee-500/50 focus:border-shopee-500 transition-all font-mono"
+            className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all font-mono"
           />
         </div>
 
@@ -191,21 +191,17 @@ export default function InputCard({
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
               Active Formula:
             </span>
-            <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 font-mono text-amber-300 font-bold">
-              Pacing: {settings.sceneDuration || 3.3}s (Shopee FYP)
+            <span className="px-2 py-0.5 rounded bg-red-500/15 border border-red-500/30 font-mono text-red-300 font-bold">
+              Pacing: {settings.sceneDuration || 3.3}s (YouTube 16:9)
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 font-mono text-slate-200">
               Subtitle: Kuning &amp; Putih
             </span>
             <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono text-emerald-300 font-bold">
-              Framing: {(settings.renderMode || 'stage_80') === 'stage_80' ? 'Stage 80% (Blur)' : (settings.renderMode || 'stage_80') === 'fit_canvas' ? 'Fit 16:9' : (settings.renderMode || 'stage_80') === 'vertical_crop' ? 'Full 9:16' : 'Stage 1:1'}
+              Framing: 16:9 Native (Center + Pillars)
             </span>
-            <span className={`px-2 py-0.5 rounded border font-mono font-bold ${
-              (settings.aspectRatio || '16:9') === '16:9'
-                ? 'bg-blue-500/15 border-blue-500/30 text-blue-300'
-                : 'bg-slate-800/80 border-slate-700/60 text-slate-300'
-            }`}>
-              {(settings.aspectRatio || '16:9') === '16:9' ? '16:9 Reguler (Link Shopee Aktif)' : '9:16 Shorts'}
+            <span className="px-2 py-0.5 rounded border font-mono font-bold bg-red-500/15 border-red-500/30 text-red-300">
+              16:9 YouTube HD (Link Deskripsi Aktif)
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 font-mono text-slate-300">
               Speed: {settings.speedMultiplier}x
@@ -235,18 +231,18 @@ export default function InputCard({
             className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-lg ${
               isLoading
                 ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700'
-                : 'bg-gradient-to-r from-shopee-500 via-orange-500 to-amber-500 text-white hover:from-shopee-600 hover:to-amber-600 shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.01] active:scale-[0.99]'
+                : 'bg-gradient-to-r from-red-600 via-rose-600 to-red-500 text-white hover:from-red-500 hover:to-rose-500 shadow-red-600/30 hover:shadow-red-600/50 hover:scale-[1.01] active:scale-[0.99]'
             }`}
           >
             {isLoading ? (
               <>
                 <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                <span>Memproses Tahap 1 (Clipping & Scripting)...</span>
+                <span>Memproses Review HP (Tahap 1)...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5 fill-current" />
-                <span>Generate Review HP & Video YouTube</span>
+                <span>Generate Review HP (16:9 HD YouTube)</span>
               </>
             )}
           </button>

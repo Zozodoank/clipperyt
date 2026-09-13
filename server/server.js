@@ -925,17 +925,22 @@ export async function runStage1Pipeline({
   activeJobs.set(jobId, jobMeta);
   persistJob(jobId, jobMeta);
 
+  let rawVideoPath = null;
+  let videoMeta = { title: productTitle || 'Review Smartphone', duration: 60 };
+  let highlight = null;
+  let silentOutputPath = null;
+  let silentFileName = null;
+  let currentYoutubeUrl = youtubeUrl;
+
   updateProgress({
     step: 'start',
-    message: `Menyiapkan pembuatan video affiliate untuk "${coreProductNoun}"...`,
+    message: `Menyiapkan video review spesifikasi "${coreProductNoun}"...`,
     progress: 5,
     status: 'running',
     coreProductNoun,
   });
 
   try {
-    let rawVideoPath;
-    let videoMeta = { title: productTitle || 'Product Video', duration: 60 };
 
     const existingVideoInTemp = (() => {
       try {
@@ -1071,7 +1076,7 @@ export async function runStage1Pipeline({
               candidateIntroCutoff = localCheck.introCutoffSec || 5.0;
               console.log(`[Job ${jobId}] ℹ️ Intro bumper pembuka terdeteksi (${candidateIntroCutoff}s). AI & backend akan membuang detik awal ini.`);
             }
-            console.log(`[Job ${jobId}] ✅ [Filter 2/3 Lolos] Area 9:16 bersih dari bumper, logo statis, grafis, teks & wajah.`);
+            console.log(`[Job ${jobId}] ✅ [Filter 2/3 Lolos] Area video 16:9 bersih dari bumper, logo statis, grafis, teks & wajah.`);
           }
         } catch (localErr) {
           if (localErr.isAiRejection) throw localErr;
@@ -1827,7 +1832,7 @@ export async function runStage1Pipeline({
 
     updateProgress({
       step: 'awaiting_voiceover',
-      message: 'Tahap 1 Selesai! Kotak Scene, Naskah, dan Muted 9:16 Video Ready.',
+      message: 'Tahap 1 Selesai! Kotak Scene, Naskah, dan Video YouTube 16:9 Ready.',
       progress: 100, status: 'awaiting_voiceover', result: stage1Result
     });
 
@@ -1841,9 +1846,9 @@ export async function runStage1Pipeline({
     const hasSilentVideo = silentOutputPath && fs.existsSync(silentOutputPath);
     const hasRawVideo = rawVideoPath && fs.existsSync(rawVideoPath);
 
-    // If 1080p video was already downloaded or rendered into silent 9:16, NEVER delete or purge it!
+    // If 1080p video was already downloaded or rendered into silent 16:9, NEVER delete or purge it!
     if (hasSilentVideo || hasRawVideo) {
-      console.log(`[Job ${jobId}] ✅ Video asset exists (${hasSilentVideo ? 'silent 9:16' : 'raw 1080p'}). Preserving job in history as awaiting_voiceover.`);
+      console.log(`[Job ${jobId}] ✅ Video asset exists (${hasSilentVideo ? 'silent 16:9' : 'raw 1080p'}). Preserving job in history as awaiting_voiceover.`);
       const currentJob = activeJobs.get(jobId) || jobMeta;
       const preservedJob = {
         ...currentJob,
@@ -2009,9 +2014,9 @@ function getLatestAutoRun() {
 
 async function runAutoStage1Worker(run) {
   try {
-    updateAutoRun(run, { status: 'running', message: 'Memulai pencarian produk viral Shopee...', progress: 5 });
+    updateAutoRun(run, { status: 'running', message: 'Memulai pencarian smartphone trending (Android 16+ / Rp 2 Jt+)...', progress: 5 });
 
-    // Thoroughly shuffle 1000+ keywords so each auto run picks varied, fresh product categories
+    // Thoroughly shuffle 1000+ keywords so each auto run picks varied, fresh smartphone queries
     const candidateKeywords = getAutoKeywords(1000);
 
     const seenShopeeUrls = new Set();
@@ -2023,7 +2028,7 @@ async function runAutoStage1Worker(run) {
 
       const currentTargetIndex = run.successfulJobs + 1;
       updateAutoRun(run, {
-        message: `Mencari produk (${currentTargetIndex}/${run.maxJobs}): "${keyword}"...`,
+        message: `Mencari smartphone (${currentTargetIndex}/${run.maxJobs}): "${keyword}"...`,
         progress: Math.min(95, Math.round((run.successfulJobs / run.maxJobs) * 100) || 5),
       });
 
@@ -2034,7 +2039,7 @@ async function runAutoStage1Worker(run) {
 
       updateAutoRun(run, {
         currentProductTitle: product.title,
-        message: `[${currentTargetIndex}/${run.maxJobs}] Menemukan: "${product.title.slice(0, 35)}...". Mencari video YouTube...`,
+        message: `[${currentTargetIndex}/${run.maxJobs}] Target HP: "${product.title.slice(0, 35)}...". Mencari footage YouTube...`,
         progress: Math.min(95, Math.round((run.successfulJobs / run.maxJobs) * 100) + 3),
       });
 
@@ -2065,7 +2070,7 @@ async function runAutoStage1Worker(run) {
 
         try {
           updateAutoRun(run, {
-            message: `[${currentTargetIndex}/${run.maxJobs}] Memproses video untuk "${product.title.slice(0, 30)}..."...`,
+            message: `[${currentTargetIndex}/${run.maxJobs}] Memproses video review HP untuk "${product.title.slice(0, 30)}..."...`,
             progress: Math.min(95, Math.round((run.successfulJobs / run.maxJobs) * 100) + 5),
           });
 

@@ -433,7 +433,25 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080d1a] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#070b14] text-slate-100 selection:bg-red-600 selection:text-white">
+      {/* Prominent Distinction Banner: YTCLIPER 16:9 Landscape Review Engine */}
+      <div className="bg-gradient-to-r from-red-700 via-rose-700 to-red-800 text-white text-xs font-bold px-4 py-2 flex items-center justify-between border-b border-red-500/40 shadow-md">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+          <span className="uppercase tracking-wider font-extrabold text-white">🔴 YTCLIPER: YOUTUBE 16:9 TECH REVIEW ENGINE</span>
+          <span className="bg-black/40 text-red-200 px-2 py-0.5 rounded text-[10px] font-mono border border-red-400/30">
+            HP 2 JUTAAN+ &bull; ANDROID 16+ &bull; KAMERA DEPAN-BELAKANG
+          </span>
+        </div>
+        <div className="hidden sm:flex items-center gap-3 text-[11px] text-red-100 font-medium">
+          <span>Format: 16:9 Landscape YouTube Layout</span>
+          <span className="text-red-300">&bull;</span>
+          <span>Durasi: 50–59 Detik</span>
+          <span className="text-red-300">&bull;</span>
+          <span className="bg-red-950/60 text-red-200 px-2 py-0.5 rounded border border-red-400/40">CTA: Link di Deskripsi Video</span>
+        </div>
+      </div>
+
       <Navbar onOpenSettings={() => setIsSettingsOpen(true)} engineStatus={engineStatus} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -501,31 +519,31 @@ export default function App() {
                   <CaptionCard result={result} />
                 </div>
               ) : (
-              <div className="glass-panel rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[480px] border-dashed border-slate-800">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-shopee-500/20 via-orange-500/20 to-amber-500/20 border border-shopee-500/30 flex items-center justify-center text-shopee-500 mb-4 shadow-xl">
+              <div className="glass-panel rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[480px] border-dashed border-red-500/30 bg-slate-900/60">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600/30 via-rose-600/20 to-red-500/30 border border-red-500/40 flex items-center justify-center text-red-400 mb-4 shadow-xl shadow-red-950/50">
                   <Clapperboard className="w-8 h-8 stroke-[1.75]" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Alur 2-Tahap: AI Auto-Clip + FFmpeg</h3>
-                <p className="text-xs text-slate-400 max-w-md leading-relaxed mb-6">
-                  1. Masukkan Judul Produk, Deskripsi, URL YouTube, & Link Shopee.<br />
-                  2. <strong className="text-emerald-400">OpenRouter Free</strong> menganalisis frame video panjang dan memilih potongan faceless 5 detik yang fokus produk.<br />
-                  3. <strong className="text-indigo-400">FFmpeg</strong> memotong sesuai instruksi AI, menjaga produk full body dalam frame 9:16, lalu AI membuat Kotak Scene &amp; Naskah Ad Advisor.<br />
-                  4. Sistem otomatis membuat <strong className="text-emerald-400">Voiceover Suara Gadis Indonesia &amp; Subtitle</strong> untuk menghasilkan <strong className="text-emerald-400">Video Final</strong>.
+                <h3 className="text-lg font-bold text-white mb-2">Alur Review Spesifikasi HP: YouTube 16:9 HD + AI Scripting</h3>
+                <p className="text-xs text-slate-300 max-w-md leading-relaxed mb-6 font-medium">
+                  1. Masukkan Tipe Smartphone (Rp 2 Jutaan+, Android 16+), Spesifikasi, &amp; URL YouTube.<br />
+                  2. <strong className="text-red-400">Gemini Direct (Flash)</strong> menganalisis footage YouTube dan memilih 12–18 klip sorotan terbaik (layar AMOLED, performa gaming, baterai, kamera depan &amp; belakang).<br />
+                  3. <strong className="text-rose-400">FFmpeg</strong> memotong dan menyusun klip dalam <strong className="text-white">format 16:9 Landscape native</strong> dengan dynamic colored pillars (durasi 50–59 detik).<br />
+                  4. Sistem membuat <strong className="text-emerald-400">Voiceover Reviewer Gadget Ahli &amp; Subtitle Sinkron</strong> dengan soft selling CTA link di deskripsi video.
                 </p>
                 <div className="grid grid-cols-2 gap-3 w-full max-w-sm text-left">
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-red-500/30 text-xs shadow-sm">
                     <div className="font-bold text-slate-200 flex items-center gap-1.5 mb-1">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>openrouter/free</span>
+                      <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                      <span>Gemini Direct (Flash)</span>
                     </div>
-                    <p className="text-[11px] text-slate-400">Vision OCR &amp; Naskah (100% Gratis)</p>
+                    <p className="text-[11px] text-slate-400">Review 5-Beat &amp; Uji Kamera (0 MB Kuota)</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-xs shadow-sm">
                     <div className="font-bold text-slate-200 flex items-center gap-1.5 mb-1">
                       <Clapperboard className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Full Product</span>
+                      <span>16:9 Landscape HD</span>
                     </div>
-                    <p className="text-[11px] text-slate-400">9:16 tanpa memotong produk</p>
+                    <p className="text-[11px] text-slate-400">YouTube Reguler (Dynamic Pillars)</p>
                   </div>
                 </div>
               </div>
@@ -544,8 +562,8 @@ export default function App() {
         engineStatus={engineStatus}
       />
 
-      <footer className="border-t border-slate-800/60 py-4 bg-slate-950/40 text-center text-xs text-slate-500">
-        <p>Local AI Affiliate Clipper &bull; React + Node.js + FFmpeg &bull; Qwen & Gemini (Manual Switch) &bull; 2-Stage Ad Advisor Pipeline</p>
+      <footer className="border-t border-slate-800/60 py-4 bg-slate-950/60 text-center text-xs text-slate-400">
+        <p className="font-medium">🔴 <strong className="text-slate-200">YTCLIPER Tech Review Engine</strong> &bull; YouTube 16:9 Landscape Layout &bull; Review HP Android 16+ (Rp 2 Jutaan+) &bull; Durasi 50–59s &bull; CTA Link di Deskripsi Video</p>
       </footer>
     </div>
   );

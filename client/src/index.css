@@ -21,8 +21,8 @@
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(238, 77, 45, 0.3);
-  box-shadow: 0 0 25px -5px rgba(238, 77, 45, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.2);
 }
 
 /* Custom scrollbar */
@@ -38,5 +38,5 @@
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ee4d2d;
+  background: #ef4444;
 }

@@ -302,6 +302,11 @@ export function isBulkyOrUnsuitableProduct(text = '') {
     return true;
   }
 
+  // 1A. Disqualify any kitchen, cookware, utensils, fashion, food, or household products
+  if (/\b(?:sendok|garpu|tirisan|piring|wajan|panci|spatula|pisau|bumbu|dapur|masak|resep|makanan|minuman|baju|celana|tas|sepatu|meja|kursi|lemari|cangkir|botol|sikat|sabun|parutan|chopper|blender|mixer|oven|microwave|kompor|kulkas|dispenser|teko|fryer|rice\s*cooker|stationary|rak\s*bumbu|tempat\s*sendok)\b/i.test(normalized)) {
+    return true;
+  }
+
   // 1B. Disqualify Phone Accessories / Parts / Non-Unit Products (Must be genuine Phone/Smartphone unit!)
   if (/\b(?:casing|case\b|softcase|hardcase|tempered\s*glass|anti\s*gores|screen\s*protector|pelindung\s*layar|kabel\s*data|charger|kepala\s*charger|skin\s*hp|stiker\s*hp|kardus|dus\s*kosong|dummy|replika|tiruan|sparepart|lcd\s*hp|baterai\s*tanam|lem\s*lcd|gantungan\s*hp|strap\s*hp|holder\s*hp|stand\s*hp)\b/i.test(normalized)) {
     return true;
@@ -868,66 +873,95 @@ export const KITCHEN_INTENT_MODIFIERS = [
   'spill perlengkapan dapur murah viral'
 ];
 
+export const SMARTPHONE_CORE_MODELS = [
+  // Infinix
+  'Infinix Note 40 Pro 5G', 'Infinix GT 20 Pro 5G', 'Infinix Note 40 4G', 'Infinix Hot 40 Pro', 'Infinix Hot 50 Pro 5G', 'Infinix Zero 30 5G', 'Infinix Zero 40 5G',
+  // POCO
+  'POCO X6 5G', 'POCO X6 Pro 5G', 'POCO M6 Pro', 'POCO F6 5G', 'POCO M6 Plus 5G', 'POCO X5 Pro 5G',
+  // Redmi / Xiaomi
+  'Redmi Note 13 5G', 'Redmi Note 13 Pro 5G', 'Redmi Note 13 Pro Plus 5G', 'Redmi Note 14 Pro 5G', 'Xiaomi 13T', 'Redmi Note 12 Pro 5G',
+  // Samsung Galaxy
+  'Samsung Galaxy A15 5G', 'Samsung Galaxy A25 5G', 'Samsung Galaxy A35 5G', 'Samsung Galaxy A55 5G', 'Samsung Galaxy M15 5G', 'Samsung Galaxy A24',
+  // iQOO
+  'iQOO Z9x 5G', 'iQOO Z9 5G', 'iQOO Neo 9 Pro', 'iQOO Z7 5G',
+  // Realme
+  'Realme 12 5G', 'Realme 12 Plus 5G', 'Realme 13 5G', 'Realme 13 Plus 5G', 'Realme 11 Pro 5G', 'Realme C67',
+  // Tecno
+  'Tecno Pova 6 Pro 5G', 'Tecno Camon 30 5G', 'Tecno Camon 30 Pro 5G', 'Tecno Spark 20 Pro Plus', 'Tecno Pova 5 Pro 5G',
+  // Vivo
+  'Vivo Y100 5G', 'Vivo Y200 5G', 'Vivo V30e 5G', 'Vivo V30 5G', 'Vivo V29e 5G',
+  // Oppo
+  'Oppo Reno 11F 5G', 'Oppo Reno 12F 5G', 'Oppo A79 5G', 'Oppo A78 5G'
+];
+
+export const SMARTPHONE_REVIEW_ANGLES = [
+  'review indonesia lengkap',
+  'review kamera depan belakang ois',
+  'review spesifikasi dan uji gaming',
+  'review layar amoled 120hz',
+  'review chipset kencang baterai awet',
+  'kelebihan dan kekurangan jujur',
+  'tes kamera foto video lowlight',
+  'review hp 2 jutaan terbaik 2026',
+  'review performa antutu benchmark',
+  'review baterai 5000mah fast charging',
+  'rekomendasi smartphone 2 jutaan',
+  'review kamera selfie dan belakang jernih',
+  'review android 16 terkencang',
+  'review hp gaming 2 jutaan',
+  'unboxing dan impresi pertama'
+];
+
+export const SMARTPHONE_INTENT_PREFIXES = [
+  'review',
+  'spesifikasi',
+  'unboxing dan review',
+  'rekomendasi hp 2 jutaan',
+  'review kamera',
+  'tes performa gaming',
+  'kelebihan dan kekurangan',
+  'review jujur'
+];
+
 /**
- * Generates an unlimited stream of unique, authentic kitchen tool keywords
- * using combinatorial cross-product patterns, strictly avoiding any bulky items
- * or keywords in the excluded set.
+ * Generates an expansive list of 1000+ unique smartphone review keywords
+ * targeting Rp 2 jutaan+ models, Android 16+, and front/rear camera reviews.
  */
-export function generateCombinatorialKitchenKeywords(limit = 1000, excludedSet = new Set()) {
+export function generateCombinatorialSmartphoneKeywords(limit = 1000, excludedSet = new Set()) {
   const resultSet = new Set();
+  const models = [...SMARTPHONE_CORE_MODELS];
+  const angles = [...SMARTPHONE_REVIEW_ANGLES];
+  const prefixes = [...SMARTPHONE_INTENT_PREFIXES];
+
+  for (let i = models.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [models[i], models[j]] = [models[j], models[i]];
+  }
+  for (let i = angles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [angles[i], angles[j]] = [angles[j], angles[i]];
+  }
 
   const patterns = [
-    (tool, variant, target, mod) => `${tool} ${variant}`,
-    (tool, variant, target, mod) => `${tool} ${target}`,
-    (tool, variant, target, mod) => `${tool} ${mod}`,
-    (tool, variant, target, mod) => `${tool} ${variant} ${mod}`,
-    (tool, variant, target, mod) => `${tool} ${target} ${mod}`,
-    (tool, variant, target, mod) => `${mod} ${tool} ${variant}`,
-    (tool, variant, target, mod) => `${mod} ${tool}`,
-    (tool, variant, target, mod) => `${tool} ${variant} ${target}`,
-    (tool, variant, target, mod) => `${mod} ${tool} ${target}`,
-    (tool, variant, target, mod) => `rekomendasi ${tool} ${variant}`,
-    (tool, variant, target, mod) => `spill ${tool} ${mod}`,
-    (tool, variant, target, mod) => `${tool} multifungsi ${variant}`,
-    (tool, variant, target, mod) => `alat dapur ${tool} ${variant}`,
-    (tool, variant, target, mod) => `perlengkapan masak ${tool} ${target}`
+    (m, a, p) => `review ${m} ${a}`,
+    (m, a, p) => `spesifikasi ${m} ${a}`,
+    (m, a, p) => `${p} ${m}`,
+    (m, a, p) => `review kamera ${m} depan belakang`,
+    (m, a, p) => `${m} review jujur kelebihan kekurangan`,
+    (m, a, p) => `rekomendasi hp 2 jutaan ${m}`,
+    (m, a, p) => `${m} tes performa gaming dan baterai`,
+    (m, a, p) => `unboxing ${m} indonesia review`,
+    (m, a, p) => `review ${m} kamera jernih ois`
   ];
-
-  // Fisher-Yates shuffle clones of our arrays so each invocation produces unique orders
-  const tools = [...KITCHEN_CORE_TOOLS];
-  for (let i = tools.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [tools[i], tools[j]] = [tools[j], tools[i]];
-  }
-
-  const variants = [...KITCHEN_VARIANTS];
-  for (let i = variants.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [variants[i], variants[j]] = [variants[j], variants[i]];
-  }
-
-  const targets = [...KITCHEN_TARGETS];
-  for (let i = targets.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [targets[i], targets[j]] = [targets[j], targets[i]];
-  }
-
-  const mods = [...KITCHEN_INTENT_MODIFIERS];
-  for (let i = mods.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [mods[i], mods[j]] = [mods[j], mods[i]];
-  }
 
   for (let pIdx = 0; pIdx < patterns.length; pIdx++) {
     const patternFn = patterns[pIdx];
-    for (let i = 0; i < tools.length; i++) {
-      const tool = tools[i];
-      for (let j = 0; j < variants.length; j++) {
-        const variant = variants[j];
-        const target = targets[(i + j) % targets.length];
-        const mod = mods[(i * 3 + j) % mods.length];
-
-        const candidate = patternFn(tool, variant, target, mod).trim();
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      for (let j = 0; j < angles.length; j++) {
+        const angle = angles[j];
+        const prefix = prefixes[(i + j) % prefixes.length];
+        const candidate = patternFn(model, angle, prefix).trim().toLowerCase();
         const norm = normalizeKeyword(candidate);
 
         if (!excludedSet.has(norm) && !resultSet.has(candidate)) {
@@ -943,8 +977,11 @@ export function generateCombinatorialKitchenKeywords(limit = 1000, excludedSet =
   return Array.from(resultSet);
 }
 
+// Backward-compatibility alias
+export const generateCombinatorialKitchenKeywords = generateCombinatorialSmartphoneKeywords;
+
 /**
- * Returns a randomized, expansive array of 1000+ unique kitchen tool keywords.
+ * Returns a randomized, expansive array of 1000+ unique smartphone review keywords.
  * Automatically excludes any keywords or product titles that have already been generated/processed.
  */
 export function getAutoKeywords(limit = 1000, { excludeUsed = true, shuffle = true } = {}) {
@@ -966,7 +1003,7 @@ export function getAutoKeywords(limit = 1000, { excludeUsed = true, shuffle = tr
 
   const resultSet = new Set();
 
-  // 1. First include any unused default curated keywords
+  // 1. First include any unused default curated smartphone keywords
   for (const kw of DEFAULT_AUTO_KEYWORDS) {
     const norm = normalizeKeyword(kw);
     if (!excludedSet.has(norm) && !isBulkyOrUnsuitableProduct(kw)) {
@@ -975,14 +1012,14 @@ export function getAutoKeywords(limit = 1000, { excludeUsed = true, shuffle = tr
     }
   }
 
-  // 2. Dynamically synthesize remaining keywords from combinatorial kitchen matrix
+  // 2. Dynamically synthesize remaining keywords from combinatorial smartphone matrix
   if (resultSet.size < limit) {
     const needed = limit - resultSet.size;
     const combinedExcluded = new Set([...excludedSet]);
     for (const item of resultSet) {
       combinedExcluded.add(normalizeKeyword(item));
     }
-    const generated = generateCombinatorialKitchenKeywords(needed * 2, combinedExcluded);
+    const generated = generateCombinatorialSmartphoneKeywords(needed * 2, combinedExcluded);
     for (const g of generated) {
       resultSet.add(g);
       if (resultSet.size >= limit) break;
@@ -1006,7 +1043,12 @@ const insecureTlsAgent = new https.Agent({ rejectUnauthorized: false });
 
 function formatKeywordToProductTitle(keyword) {
   if (!keyword) return 'Smartphone 2 Jutaan Terbaik';
-  return keyword
+  let cleaned = keyword
+    .replace(/\b(?:review|spesifikasi|unboxing dan review|unboxing|rekomendasi hp 2 jutaan|tes gaming|kelebihan dan kekurangan|review jujur|review lengkap|indonesia)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (cleaned.length < 3) cleaned = keyword;
+  return cleaned
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');

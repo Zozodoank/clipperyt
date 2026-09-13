@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Sparkles, Settings, Cpu, ShieldCheck, FolderOpen, Loader2, RotateCw, AlertTriangle, CheckCircle2, Wifi } from 'lucide-react';
+import { Youtube, Video, Sparkles, Settings, Cpu, ShieldCheck, FolderOpen, Loader2, RotateCw, AlertTriangle, CheckCircle2, Wifi } from 'lucide-react';
 import BandwidthModal from './BandwidthModal';
 
 export default function Navbar({ onOpenSettings, engineStatus }) {
@@ -113,8 +113,8 @@ export default function Navbar({ onOpenSettings, engineStatus }) {
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-shopee-500 via-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-shopee-500/25">
-                <Video className="w-5 h-5 text-white stroke-[2.5]" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-500 flex items-center justify-center shadow-lg shadow-red-600/40 border border-red-400/30">
+                <Youtube className="w-5 h-5 text-white fill-current" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center" title="Local Processing Engine Online">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
@@ -123,14 +123,15 @@ export default function Navbar({ onOpenSettings, engineStatus }) {
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-lg text-white tracking-tight">
-                  YTCLIPER Tech Review
+                <h1 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+                  <span className="text-red-500">YTCLIPER</span>
+                  <span className="text-slate-200 font-semibold text-base">Tech Review</span>
                 </h1>
-                <span className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 text-red-400 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
+                <span className="bg-gradient-to-r from-red-600/30 via-rose-600/20 to-red-500/30 border border-red-500/50 text-red-400 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full shadow-sm shadow-red-950">
                   YouTube 16:9 HD
                 </span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">
+              <p className="text-xs text-slate-400 hidden sm:block font-medium">
                 AI Smartphone Spec Review Generator (16:9 Landscape YouTube Layout &amp; Camera Deep-Dive)
               </p>
             </div>
