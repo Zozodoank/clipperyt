@@ -928,8 +928,6 @@ export async function runStage1Pipeline({
   let rawVideoPath = null;
   let videoMeta = { title: productTitle || 'Review Smartphone', duration: 60 };
   let highlight = null;
-  let silentOutputPath = null;
-  let silentFileName = null;
   let currentYoutubeUrl = youtubeUrl;
 
   updateProgress({
