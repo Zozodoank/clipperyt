@@ -207,8 +207,22 @@ export const DIRTY_NEGATIVE_OPERATORS = [
   '-selep',
   '-perontok',
   '-pemanen',
-  '-traktor',
-  '-silase'
+  '-silase',
+  '-casing',
+  '-case',
+  '-softcase',
+  '-hardcase',
+  '-tempered',
+  '-antigores',
+  '-lcd',
+  '-baterai',
+  '-rusak',
+  '-pecah',
+  '-service',
+  '-servis',
+  '-repair',
+  '-bongkar',
+  '-teardown'
 ];
 
 export function buildCleanYouTubeQuery(baseQuery) {

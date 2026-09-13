@@ -335,9 +335,9 @@ CRITERION 4: FACE DISCARD RULE (CHERRY-PICK CLEAN HANDS-ON PRODUCT ACTIONS, DISC
   * Wajah manusia muncul mendominasi hampir seluruh video sehingga TIDAK BISA ditemukan minimal 5 cuplikan tangan bersih (${clipSec}s per cuplikan).
 
 CRITERION 5: CLEAN TIMESTAMP SELECTION
-- Select 5 to 8 non-overlapping timestamps (each about ${clipSec}s long) showing the best, satisfying hands-on product actions.
+- Select 12 to 18 non-overlapping timestamps (each about ${clipSec}s long) showing the best hands-on smartphone demonstration: bodi fisik, bezel layar, performa scrolling/gaming, dan uji kamera.
 - Each timestamp in "timestamps" MUST be in seconds from the start of the video where the 9:16 center area is 100% faceless, free of subtitles, free of floating text, free of graphic overlays, and free of watermarks/logos.
-- If the video does NOT contain at least 5 clean faceless product clips inside the 9:16 frame: MUST BE REJECTED.
+- If the video does NOT contain at least 8 clean faceless smartphone clips inside the 9:16 frame: MUST BE REJECTED.
 
 Output valid JSON ONLY with this exact format:
 If ACCEPTED:
@@ -700,9 +700,9 @@ CRITERION 4: FACE DISCARD RULE (CHERRY-PICK CLEAN HANDS-ON PRODUCT ACTIONS, DISC
   * Wajah manusia muncul mendominasi hampir seluruh video sehingga TIDAK BISA ditemukan minimal 4 cuplikan tangan bersih (${clipSec}s per cuplikan).
 
 CRITERION 5: CLEAN TIMESTAMP SELECTION
-- Select 4 to 8 non-overlapping timestamps (each about ${clipSec}s long) showing the best, satisfying hands-on product actions.
+- Select 12 to 18 non-overlapping timestamps (each about ${clipSec}s long) showing the best hands-on smartphone demonstration: bodi fisik, bezel layar, performa scrolling/gaming, dan uji kamera.
 - Each timestamp in "timestamps" MUST be in seconds from the start of the video where the 9:16 center area is 100% faceless, free of subtitles, free of floating text, free of graphic overlays, and free of watermarks/logos.
-- If the video does NOT contain at least 4 clean faceless product clips inside the 9:16 frame: MUST BE REJECTED.
+- If the video does NOT contain at least 8 clean faceless smartphone clips inside the 9:16 frame: MUST BE REJECTED.
 
 Output valid JSON ONLY with this exact format:
 If ACCEPTED:
@@ -1420,93 +1420,93 @@ export async function generateAdAdvisorScriptWithAI({
     progress: 75
   });
 
-  const effectiveTitle = (productTitle || '').trim() || videoMetadata?.title || 'Produk Viral Shopee';
+  const effectiveTitle = (productTitle || '').trim() || videoMetadata?.title || 'Smartphone 2 Jutaan Terbaik';
   const effectiveDesc = (productDescription || '').trim();
-  const targetDuration = Math.max(30, Math.min(45, Math.round(Number(segmentDuration) || 33)));
-  const effectiveSceneSec = Math.max(2.5, Math.min(4.5, Number(sceneDuration) || 3.3));
-  const sceneCount = Math.max(7, Math.min(12, Math.round(targetDuration / effectiveSceneSec)));
-  // Natural Indonesian commercial speaking rate in Edge-TTS & Gemini TTS: ~2.3 - 2.5 words per second (~140 - 150 WPM).
-  // For a 30-35s video, target speech duration is ~targetDuration - 1.5s (leaving 1-2s clean hold for the CTA).
-  // Target ~72-80 words (~7-8 words per ~3.3s scene, ~480-550 characters total).
-  // This ensures the voiceover comfortably fills the entire 30-35s runtime without lagging or finishing prematurely!
-  const targetSpeechSec = Math.max(28, targetDuration - 1.5);
+  const targetDuration = Math.max(50, Math.min(59, Math.round(Number(segmentDuration) || 55)));
+  const effectiveSceneSec = Math.max(2.8, Math.min(3.8, Number(sceneDuration) || 3.3));
+  const sceneCount = Math.max(14, Math.min(18, Math.round(targetDuration / effectiveSceneSec)));
+  // Natural Indonesian tech reviewer speaking rate in Edge-TTS & Gemini TTS: ~2.3 - 2.4 words per second (~140 WPM).
+  // For a 50-59s video (target 55s), speech duration is ~targetDuration - 2.5s (leaving clean hold for description CTA).
+  // Target ~120-135 words (~7-8 words per ~3.3s scene, ~800-950 characters total).
+  // This ensures the voiceover comfortably fills the entire 50-59s runtime without lagging or finishing prematurely!
+  const targetSpeechSec = Math.max(48, targetDuration - 2.5);
   const targetWords = Math.round(targetSpeechSec * 2.35);
   const minWords = Math.round(targetSpeechSec * 2.15);
   const maxWords = Math.round(targetSpeechSec * 2.55);
 
-  const systemPrompt = `You are a Senior Creative Director and Ad Advisor specializing in Indonesian Short-Form Affiliate Video Marketing (Shopee Video, TikTok Shop, Instagram Reels).
+  const systemPrompt = `You are a Senior Tech & Smartphone Reviewer and Ad Advisor specializing in Indonesian YouTube Shorts and Tech Reviews (gaya penyampaian lugas, objektif, berbobot, dan profesional layaknya reviewer ahli gadget seperti David GadgetIn / Jagat Review).
 
-You will receive the explicit Product Title, Product Description, and the sampled frames of a ${targetDuration}-second video clip (${sceneCount} fast scenes of ~${effectiveSceneSec.toFixed(1)}s each).
+You will receive the explicit Smartphone Model / Product Title, Product Description, and the sampled frames of a ${targetDuration}-second video clip (${sceneCount} fast scenes of ~${effectiveSceneSec.toFixed(1)}s each).
 
-Use the proven SHOPEE FYP 4-BEAT FORMULA engineered to break past the initial 200-views testing pool through high watch-time completion rate and maximum Keranjang Kuning conversions:
+KRITERIA SMARTPHONE:
+- Rentang harga: Handphone harga Rp 2 jutaan ke atas (mid-range hingga flagship value).
+- Sistem Operasi: Android 16 ke atas atau versi Android terkini dengan update fitur stabil.
+- Fokus Review: Desain & Layar AMOLED 120Hz -> Dapur Pacu & Chipset Kencang -> Baterai & Fast Charging -> KUALITAS KAMERA DEPAN & BELAKANG (di ujung video) -> SOFT SELLING CTA LINK DI DESKRIPSI.
 
-CRITICAL 4-BEAT SHOPEE FYP FORMULA:
-1. [00:00] BEAT 1: THE 3-SECOND PROBLEM HOOK (00:00 - 00:03)
-   - MUST immediately state a specific everyday problem / frustration caused by the old way or conventional tool!
-   - MANDATORY FORMULA: "Kalau [kebiasaan/cara lama pakai alat biasa], fix [masalah fatal / kurang maksimal / bikin capek]!"
-   - DILARANG KERAS menggunakan sapaan basi seperti: "Stop scroll!", "Halo guys!", "Siapa disini yang...", "Racun Shopee wajib punya!", atau pembukaan yang bertele-tele!
-   - Contoh tepat: "Kalau nyuci motor masih pakai kain biasa, fix kurang maksimal!" atau "Masih sering capek ngulek bumbu pakai cobek lama, tangan pegal dan lama beres?"
+FORMULA 5-BEAT SMARTPHONE TECH REVIEW (${targetDuration} DETIK):
+1. [00:00] BEAT 1: HOOK & IMPRESI DESAIN/LAYAR (00:00 - 00:09) (~20 kata)
+   - Buka langsung dengan nama smartphone dan positioning harga (2 jutaan ke atas).
+   - Ulas impresi bodi yang ergonomis/stylish dan layar tajam AMOLED 120Hz yang sangat mulus untuk scrolling harian.
+   - DILARANG menggunakan sapaan basi seperti: "Stop scroll!", "Halo guys!", "Siapa disini yang...", atau pembukaan bertele-tele.
 
-2. BEAT 2: HERO SOLUTION & VALUE INTRODUCTION (00:03 - 00:07)
-   - Introduce the product as the hero solution that immediately eliminates the pain point.
-   - Audiences buy "solutions", not just static items.
-   - Contoh: "Untung sekarang ada ${effectiveTitle} ini, sekali usap langsung beres tanpa ribet!"
+2. BEAT 2: DAPUR PACU, CHIPSET & ANDROID 16 / TERBARU (00:09 - 00:25) (~35 kata)
+   - Ulas performa chipset/SoC (misal Snapdragon / Dimensity / Helio) yang kencang di kelasnya.
+   - Kapasitas RAM dan storage lega untuk multitasking dan gaming tanpa lag atau frame drop.
+   - Sistem operasi Android 16 atau versi terkini dengan UI yang bersih, stabil, dan minim bloatware.
 
-3. BEAT 3: SATISFYING VISUAL DEMONSTRATION & CORE BENEFITS (00:07 - 00:17)
-   - Describe the satisfying visual proof seen in the video frames: rich foam (busa melimpah), cleaning hard-to-reach crevices (menjangkau sela-sela), smooth effortless cutting, hands protected from scratches/cuts (tangan aman gak lecet).
-   - Satisfying demonstrations keep viewers glued to the screen (high completion watch-time).
+3. BEAT 3: KETAHANAN BATERAI & FAST CHARGING (00:25 - 00:36) (~25 kata)
+   - Kapasitas baterai besar (5000 mAh) yang awet seharian penuh untuk pemakaian intensif.
+   - Kecepatan fast charging yang mempersingkat waktu pengisian daya tanpa menunggu lama.
 
-4. BEAT 4: PRICE PSYCHOLOGY & CALL TO ACTION (CTA) LINK DI DESKRIPSI (00:17 - ${formatSeconds(targetDuration)})
-   - Voiceover MUST state the price appeal: "Harganya murah meriah..." or "Harganya murah meriah banget, gak bikin kantong jebol!"
-   - Direct viewers to the purchase link in the video description (link aktif/berwarna biru di deskripsi video YouTube):
-     Variasi ajakan CTA yang disarankan (singkat, to-the-point, dan meyakinkan):
-     * "Link pembelian ada di deskripsi ya!"
-     * "Cek produk di deskripsi sekarang sebelum kehabisan!"
-     * "Langsung klik link pembelian di deskripsi mumpung lagi promo!"
-     * "Cek link produk di deskripsi video!"
-     * "Buruan cek produk di deskripsi!"
-   - DILARANG mengarahkan ke keranjang kuning atau link di bio. Penonton diarahkan untuk membuka deskripsi video karena link pembelian ada di deskripsi.
+4. BEAT 4: REVIEW KUALITAS KAMERA DEPAN & BELAKANG (00:36 - 00:49) (~30 kata)
+   - REVIEW MENDALAM SEKTOR KAMERA DI UJUNG VIDEO:
+     * Kamera belakang: sensor utama beresolusi tinggi, hasil jepretan detail dengan dynamic range luas, warna natural, foto malam terang, dan perekaman video stabil (didukung OIS/EIS).
+     * Kamera depan: selfie jernih, detail wajah natural, dan tajam untuk video call atau konten media sosial.
+
+5. BEAT 5: KESIMPULAN & SOFT SELLING CTA LINK DI DESKRIPSI (00:49 - ${formatSeconds(targetDuration)}) (~20 kata)
+   - Kesimpulan profesional bahwa smartphone ini sangat worth it dan rekomendasi juara di rentang harga 2 jutaan ke atas.
+   - Soft selling CTA: "Karena link di video Shorts sudah tidak bisa diklik langsung, link pembelian resmi dengan garansi original dan promo terbaik sudah saya cantumkan di deskripsi video ya! Buruan cek sekarang sebelum kehabisan."
+   - DILARANG KERAS mengarahkan ke keranjang kuning atau link di bio. Penonton diarahkan membuka deskripsi video karena link pembelian ada di deskripsi.
 
 CRITICAL DURATION & WORD-COUNT TIMING RULES:
 - The final video duration is EXACTLY ${targetDuration} seconds (${sceneCount} fast scenes of ~${effectiveSceneSec.toFixed(1)}s each).
 - Total voiceover script MUST contain between ${minWords} and ${maxWords} words (Target ideal: exactly ~${targetWords} words, ~7-8 punchy conversational words per ~${effectiveSceneSec.toFixed(1)}s scene).
 - DILARANG MEMBUAT NASKAH TERLALU PENDEK (di bawah ${minWords} kata) KARENA AKAN MEMBUAT SUARA DIBACA TERLALU LAMBAT! Naskah HARUS cukup panjang agar dibaca mengalir natural.
-- Jaga agar setiap kalimat singkat, padat, lugas, santai, dan to-the-point (~5-6 kata per adegan).
 
 1. 'sampleContext':
-   - 'productName': Explicit product name.
+   - 'productName': Explicit smartphone name / model.
    - 'videoDuration': "${targetDuration} detik"
-   - 'targetAudience': Specific target audience profile in Indonesia.
-   - 'coreProblem': The primary pain point from the old way/conventional tool.
-   - 'keyFeatures': List of 3-4 key USPs (Unique Selling Propositions).
-   - 'buyingTrigger': Psychological trigger (Problem-Solution relief, FOMO, harga murah meriah).
+   - 'targetAudience': Penggemar gadget, pencari smartphone 2 jutaan ke atas, dan gamer mobile di Indonesia.
+   - 'coreProblem': Kebutuhan smartphone kencang, kamera jernih, dan layar mulus tanpa menguras kantong.
+   - 'keyFeatures': List of 3-4 key USPs (Layar AMOLED 120Hz, Chipset Kencang Android 16, Kamera OIS Jernih, Baterai Awet).
+   - 'buyingTrigger': Rekomendasi ahli, spesifikasi tinggi harga terjangkau 2 jutaan.
 
 2. 'scenes' (Kotak Scene / Fast Scene Breakdown):
    - Break into EXACTLY ${sceneCount} fast scenes (~${effectiveSceneSec.toFixed(1)}s each).
    - For each scene provide:
      * 'sceneNumber': integer (1, 2, 3... up to ${sceneCount})
      * 'timeRange': exact range e.g. "00:00 - 00:03", "00:03 - 00:07", etc.
-     * 'visualDescription': Satisfying visual action happening in Indonesian.
-     * 'voiceover': Spoken narration line for this scene (hanya ~5-6 kata pendek, padat, dan jelas).
-     * 'adAdvisorNotes': Director notes for sound effects (SFX), visual text overlays (yellow/white text), or emotional pacing.
+     * 'visualDescription': Smartphone visual action happening in Indonesian.
+     * 'voiceover': Spoken narration line for this scene (hanya ~7-8 kata pendek, padat, dan jelas).
+     * 'adAdvisorNotes': Director notes for sound effects (SFX), visual text overlays, or emotional pacing.
 
 3. 'voiceoverScript' (Naskah Voiceover Lengkap dengan Penanda Waktu & Tag Emosi):
    - Complete Indonesian spoken narration (${minWords} - ${maxWords} words total).
    - Use dynamic emotional tone & pacing tags so the AI voiceover (Edge-TTS Gadis) sounds lively, expressive, and NEVER monotone:
-     * [excited] for energetic Problem Hooks, surprise moments, and closing CTA.
-     * [emphasis] to place strong vocal stress on key product features and instant benefits.
-     * [soft] for empathetic problem statements.
+     * [excited] for energetic hooks and closing CTA.
+     * [emphasis] to place strong vocal stress on key tech specs (chipset, AMOLED 120Hz, megapixel, OIS).
+     * [soft] for balanced technical explanations.
      * [pause] for natural human breathing pauses between sentences.
-   - Each line MUST start with an exact timestamp corresponding to each scene (e.g. [00:00], [00:03], [00:07], up to the closing CTA), followed by the emotion tag and spoken line.
-   - Closing line MUST have the price appeal ("murah meriah") and direct CTA to link pembelian di deskripsi (misal: "Link pembelian ada di deskripsi ya!", "Cek produk di deskripsi sekarang sebelum kehabisan!", atau "Langsung klik link pembelian di deskripsi mumpung promo!").
+   - Each line MUST start with an exact timestamp corresponding to each scene (e.g. [00:00], [00:04], [00:08], up to the closing CTA), followed by the emotion tag and spoken line.
+   - Closing line MUST have the soft selling CTA directing viewers to link pembelian resmi di deskripsi video.
 
 STRICT RULES FOR VOICE OVER:
-- NEVER mention unboxing, packaging, bubble wrap, or cardboard. Focus 100% on product action and problem-solving.
-- Write in natural, engaging conversational Indonesian.
+- Focus 100% on smartphone specs, user experience, and camera capabilities.
+- Write in natural, engaging professional Indonesian (layaknya reviewer ahli).
 - DILARANG KERAS menggunakan kata "kece" dan "kangen".
-- HINDARI KATA SLANG "ng" (nggak, ngasih, ngeliat, dll) - gunakan kata baku.
+- HINDARI KATA SLANG "ng" (nggak, ngasih, ngeliat, dll) - gunakan kata baku (tidak, memberi, melihat, dll).
 - DILARANG menyebut nama medsos lain (TikTok, Instagram, Facebook, dll).
-- DILARANG mengatakan "link di bio" atau "keranjang kuning" / "keranjang pojok kiri bawah" - WAJIB gunakan ajakan ke link pembelian di deskripsi (misal: "link pembelian di deskripsi", "cek produk di deskripsi", "klik link pembelian di deskripsi").
+- DILARANG mengatakan "link di bio" atau "keranjang kuning" - WAJIB gunakan ajakan ke link pembelian di deskripsi (misal: "link pembelian ada di deskripsi video ya").
 - Ejaan baku tanpa aksen é/è.
 
 4. 'aiStudioPrompt':
@@ -1515,47 +1515,37 @@ STRICT RULES FOR VOICE OVER:
 5. 'caption':
    - High-converting, full-length Video Description & Caption for YouTube Shorts and YouTube Affiliate.
    - It MUST contain the following 5 structured sections separated by double newlines:
-     1) Hook headline with emojis (catchy problem-question or FOMO statement, e.g. "🔥 Masih repot pakai cara lama yang bikin boros & berantakan? 🧼✨").
-     2) Problem-Solution & product intro (1-2 compelling sentences explaining why this product is a must-have).
-     3) Key advantages / benefits (3-4 bullet points using '✅', e.g. "Keunggulan Utama:\n✅ Sekali tekan busa melimpah\n✅ Desain 2-in-1 praktis...").
-     4) Urgency & Call to Action (CTA): "Buruan amankan sekarang mumpung lagi ada promo diskon spesial! 🔥\n\n🛒 Link pembelian produk resmi ada di deskripsi video ya!"
-     5) Hashtags: 10-15 viral, affiliate, and niche-relevant hashtags (e.g. #youtubeshorts #shorts #racunbelanja #spillracun #rekomendasiproduk #affiliateindonesia #haul #unboxing #barangunik #fyp + specific category tags).
-   - STRICT RULES FOR CAPTION:
-     * DILARANG KERAS HANYA MENULISKAN 1 KALIMAT HOOK SAJA! Caption/deskripsi WAJIB lengkap, panjang, dan berbobot.
-     * DILARANG menyertakan link URL/Shopee/tautan web apa pun di dalam caption teks.
-     * DILARANG menggunakan karakter China/Mandarin/Hanzi (100% Bahasa Indonesia).
-     * DILARANG menuliskan ajakan "cek komentar pertama".
+     1) Hook headline with emojis (catchy smartphone spec headline, e.g. "🔥 HP 2 Jutaan Terbaik dengan Layar AMOLED 120Hz & Kamera Jernih! 📱✨").
+     2) Tech overview & why this smartphone is a champion in its price class.
+     3) Key specs (4-5 bullet points using '✅', e.g. "Spesifikasi Utama:\n✅ Layar AMOLED 120Hz Mulus\n✅ Chipset Kencang Android 16\n✅ Kamera Utama Jernih OIS & Kamera Depan Tajam\n✅ Baterai 5000 mAh + Fast Charging...").
+     4) Soft selling CTA: "Mau amankan smartphone ini dengan promo diskon dan garansi resmi? 🔥\n\n🛒 Link pembelian produk resmi sudah saya cantumkan di deskripsi video ya!"
+     5) Hashtags: 10-15 viral, tech review, and smartphone hashtags (e.g. #reviewhp #spesifikasihp #hp2jutaan #hpmurah #gadgetin #techtok #smartphone #youtubeshorts #shorts #hpgaming).
 
 6. 'lexicon_to_replace' (Deteksi Istilah / Kata Bahasa Inggris Otomatis):
-   - Deteksi SEMUA kata, merk, atau istilah bahasa Inggris yang ada di naskah voiceover maupun judul/deskripsi produk (misal: 'steak', 'juicy', 'online', 'chopper', 'mini chopper', 'food chopper', 'stainless steel', 'air fryer', 'food grade', 'rechargeable', 'wireless', 'magic', 'brush', 'sponge', 'cleaner', 'fry pan', dll).
-   - Petakan ke ejaan pelafalan fonetik bahasa Indonesia yang kaku agar dibaca natural oleh TTS Bahasa Indonesia (misal: {"chopper": "coper", "stainless steel": "stenlis stil", "air fryer": "er frayer", "steak": "stik", "juicy": "jusi"}).
-   - Format wajib: Objek key-value {"kata_inggris": "ejaan_fonetik_indonesia"}. Jika tidak ada kata bahasa Inggris, isi dengan {}.
+   - Deteksi SEMUA istilah teknologi atau merk bahasa Inggris (misal: 'smartphone', 'display', 'refresh rate', 'amoled', 'chipset', 'gaming', 'fast charging', 'snapdragon', 'dimensity', 'storage', 'ram', 'camera', 'sensor', dll).
+   - Petakan ke ejaan fonetik bahasa Indonesia yang pas untuk TTS (misal: {"smartphone": "smartfon", "refresh rate": "rifres reit", "chipset": "cipset", "display": "displei", "fast charging": "fas carjing"}).
 
 Output MUST be strictly valid JSON matching the requested schema.`;
 
-  const userPrompt = `=== INFORMASI PRODUK UTAMA ===
-Judul / Nama Produk: "${effectiveTitle}"
-${effectiveDesc ? `Deskripsi & Spesifikasi Produk: "${effectiveDesc}"` : 'Deskripsi: (Analisis dari visual frame video)'}
-Visual Hook: "${productHook || 'Racun Viral Wajib Punya!'}"
+  const userPrompt = `=== INFORMASI SMARTPHONE REVIEW ===
+Judul / Tipe Smartphone: "${effectiveTitle}"
+${effectiveDesc ? `Spesifikasi & Deskripsi: "${effectiveDesc}"` : 'Spesifikasi: (Analisis dari visual frame video)'}
+Visual Hook: "${productHook || 'Smartphone 2 Jutaan Terbaik!'}"
 Durasi Video Potongan: ${targetDuration} detik (Wajib naskah dengan panjang ${minWords} - ${maxWords} kata, target ideal: ~${targetWords} kata)
 
-Visual Frames of the concatenated 5-second AI-selected product clips (${trimmedFrames.length} frames):
+Visual Frames of the concatenated AI-selected product clips (${trimmedFrames.length} frames):
 ${trimmedFrames.map((f, i) => `Frame #${i + 1} at timestamp ${f.timeFormatted} (${f.timestamp}s)`).join('\n')}
 
-Gunakan informasi judul dan deskripsi produk di atas agar naskah sangat relevan dan akurat.
-Buat Kotak Scene, Sample Context, Naskah Voiceover Ad Advisor, dan AI Studio prompt.
+Gunakan informasi judul dan spesifikasi smartphone di atas agar naskah sangat akurat dan profesional.
+Buat Kotak Scene, Sample Context, Naskah Voiceover Reviewer Ahli, dan AI Studio prompt.
 
 PENTING - ATURAN DURASI, TIMESTAMP & TEMPO NASKAH:
-1. Pada bagian 'Sample Context' (baik di JSON maupun di prompt AI Studio), WAJIB sertakan durasi voice over sesuai timestamp detik terakhir di Speaker 1, misal: "Durasi voice over 30 detik. Iklan affiliate viral...".
-2. Naskah voiceover HARUS pas ${minWords} s/d ${maxWords} kata (sekitar 7-8 kata tiap scene ~${effectiveSceneSec.toFixed(1)} detik) agar pas dengan durasi video tanpa perlu diperlambat!
-3. Setiap baris naskah voiceover dan prompt AI Studio WAJIB diawali penanda waktu video, misal: [00:00], [00:05], [00:10], [00:15], [00:20], [00:25], [00:30], [00:35], dst.
-4. JANGAN gunakan nama karakter suara khusus (cukup gunakan header "Speaker 1").
-5. DILARANG KERAS menggunakan kata "kece"! Gunakan kata seperti keren, elegan, praktis, atau bagus.
-6. DILARANG KERAS menggunakan kata "kangen" dan HINDARI kata gaul berawalan "ng" (seperti: nggak, ngasih, ngeliat, ngerasain, ngapain, dll). Gunakan bahasa Indonesia baku (tidak, memberi, melihat, dll).
-7. KATA "keju" DAN "beres" WAJIB DITULIS PERSIS: "keju" dan "beres" (keju=keju, beres=beres) tanpa tanda kecil atau aksen di atas huruf e.
-8. DILARANG KERAS menyebutkan nama platform media sosial atau marketplace apa pun (seperti Shopee, TikTok, Instagram, YouTube, Facebook, Reels, medsos, dll) di naskah voiceover maupun Kotak Scene!
-9. PADA CALL TO ACTION (CTA): WAJIB arahkan penonton ke link pembelian di deskripsi video! Selalu gunakan variasi ajakan seperti:
-   - "Link pembelian ada di deskripsi ya!"
+1. Pada bagian 'Sample Context', WAJIB sertakan durasi voice over sesuai detik terakhir, misal: "Durasi voice over ${targetDuration} detik. Review spesifikasi smartphone 2 jutaan...".
+2. Naskah voiceover HARUS pas ${minWords} s/d ${maxWords} kata (sekitar 7-8 kata tiap scene ~${effectiveSceneSec.toFixed(1)} detik) agar pas dengan durasi ${targetDuration} detik tanpa perlu diperlambat!
+3. Setiap baris naskah voiceover WAJIB diawali penanda waktu video, misal: [00:00], [00:04], [00:08], [00:12], dst.
+4. Di bagian ujung video (menjelang akhir), WAJIB lakukan review kualitas KAMERA DEPAN dan KAMERA BELAKANG secara mendalam.
+5. PADA CALL TO ACTION (CTA): WAJIB lakukan soft selling dan arahkan penonton ke link pembelian resmi di deskripsi video!
+   Contoh: "Karena link di video Shorts sudah tidak bisa diklik langsung, link pembelian resmi dengan promo terbaik sudah ada di deskripsi video ya! Cek sekarang sebelum kehabisan."
    - "Cek produk di deskripsi sekarang sebelum kehabisan!"
    - "Klik link pembelian di deskripsi mumpung lagi promo!"
    - "Cek link di deskripsi video sekarang!"
@@ -2171,27 +2161,27 @@ function normalizeClipPlan(rawClips, totalDuration, { allowFallback = true, fram
       }),
     });
     previousEnd = endSeconds;
-    if (normalized.length === 8) break; // Target max 8 clips (~24-26s)
+    if (normalized.length === 18) break; // Target max 18 clips (~55-58s)
   }
 
   console.log(`[normalizeClipPlan] Accepted ${normalized.length} valid clips from AI vision`);
 
-  if (normalized.length >= 5) {
+  if (normalized.length >= 10) {
     return normalized;
   }
 
   if (!allowFallback) {
-    const cleanErr = new Error('AI menolak video ini: tidak ditemukan minimal 5 potongan video bersih dari watermark, subtitle terjemahan, nama channel mengambang, wajah, atau proses unboxing.');
+    const cleanErr = new Error('AI menolak video ini: tidak ditemukan minimal 10 potongan video smartphone bersih dari watermark, subtitle, wajah, atau proses unboxing.');
     cleanErr.isAiRejection = true;
-    cleanErr.rejectionReason = 'Tidak ditemukan minimal 5 potongan video bersih dari watermark, subtitle terjemahan, nama channel, wajah, atau proses unboxing.';
+    cleanErr.rejectionReason = 'Tidak ditemukan minimal 10 potongan video smartphone bersih dari watermark, subtitle, wajah, atau proses unboxing.';
     throw cleanErr;
   }
 
-  // Fallback: build 6 to 8 evenly spaced clips (around 20 to 26 seconds total, exactly clipLength per clip)
-  console.log(`[normalizeClipPlan] Building ~20-26s fallback clip plan for ${totalDuration}s video with clipLength=${clipLength}s`);
+  // Fallback: build 15 to 18 evenly spaced clips (around 50 to 58 seconds total, exactly clipLength per clip)
+  console.log(`[normalizeClipPlan] Building ~50-58s fallback clip plan for ${totalDuration}s video with clipLength=${clipLength}s`);
   const fallbackClips = [];
-  const targetTotalSec = 24;
-  const fallbackTargetClips = Math.min(8, Math.max(5, Math.floor(Math.min(totalDuration, targetTotalSec) / clipLength)));
+  const targetTotalSec = 56;
+  const fallbackTargetClips = Math.min(18, Math.max(15, Math.floor(Math.min(totalDuration, targetTotalSec) / clipLength)));
   const maxStart = Math.max(0, Math.floor(totalDuration - clipLength));
   // Avoid first 15-18% of video in fallback to bypass intro unboxing segments on YouTube
   const fallbackStart = totalDuration > 30

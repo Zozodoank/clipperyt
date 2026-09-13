@@ -425,18 +425,18 @@ function normalizeRenderClips(clips, fallbackStartTime, fallbackEndTime, fallbac
           hasProductBrand: clip?.hasProductBrand !== undefined ? clip.hasProductBrand : clip?.reframe?.hasProductBrand,
         },
       });
-      if (normalized.length === 12) break; // Max 12 clips (support up to ~35s)
+      if (normalized.length === 18) break; // Max 18 clips (support up to ~58s)
     }
   }
 
   if (normalized.length) {
-    // Safety Duration Guard: Pastikan durasi total klip yang dirender minimal 30-35s (minimal 10 klip)
-    // agar sinkron dengan durasi naskah Voiceover dan standar optimal video promosi YouTube.
-    if (normalized.length < 10 || normalized.reduce((acc, c) => acc + c.duration, 0) < 30.0) {
-      console.log(`[normalizeRenderClips] Total klip saat ini ${normalized.length} (${normalized.reduce((acc, c) => acc + c.duration, 0).toFixed(1)}s). Menjalankan Safety Duration Guard menuju minimal 30-35s (minimal 10 klip)...`);
+    // Safety Duration Guard: Pastikan durasi total klip yang dirender minimal 50-59s (minimal 15-18 klip)
+    // agar sinkron dengan durasi naskah Voiceover spesifikasi smartphone 50s-59s.
+    if (normalized.length < 15 || normalized.reduce((acc, c) => acc + c.duration, 0) < 50.0) {
+      console.log(`[normalizeRenderClips] Total klip saat ini ${normalized.length} (${normalized.reduce((acc, c) => acc + c.duration, 0).toFixed(1)}s). Menjalankan Safety Duration Guard menuju minimal 50-58s (minimal 15-18 klip)...`);
       const baseClips = [...normalized];
       let cycleIdx = 0;
-      while ((normalized.length < 10 || normalized.reduce((acc, c) => acc + c.duration, 0) < 30.0) && cycleIdx < 20) {
+      while ((normalized.length < 17 || normalized.reduce((acc, c) => acc + c.duration, 0) < 54.0) && cycleIdx < 30) {
         const src = baseClips[cycleIdx % baseClips.length];
         const canHflip = !src.reframe?.hasProductBrand && src.reframe?.allowHflip !== false;
         normalized.push({
@@ -455,8 +455,8 @@ function normalizeRenderClips(clips, fallbackStartTime, fallbackEndTime, fallbac
   const fallbackStart = parseTimeToSeconds(fallbackStartTime);
   const fallbackEnd = parseTimeToSeconds(fallbackEndTime);
   const clipLength = defaultClipLength;
-  const fallbackDuration = fallbackEnd > fallbackStart ? fallbackEnd - fallbackStart : (clipLength * 10);
-  const clipCount = Math.max(10, Math.min(12, Math.floor(fallbackDuration / clipLength)));
+  const fallbackDuration = fallbackEnd > fallbackStart ? fallbackEnd - fallbackStart : (clipLength * 17);
+  const clipCount = Math.max(15, Math.min(18, Math.floor(fallbackDuration / clipLength)));
 
   for (let index = 0; index < clipCount; index++) {
     normalized.push({

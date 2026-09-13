@@ -13,224 +13,57 @@ const JOBS_FILE = path.join(__dirname, '..', 'jobs.json');
 
 export const DEFAULT_AUTO_KEYWORDS = [
   // =========================================================================
-  // 1. ALAT DAPUR, PEMOTONG & FOOD PREP (Kitchen Prep & Choppers)
+  // 1. SMARTPHONE 2 JUTAAN - 3 JUTAAN TERBAIK & VIRAL (Best Value & Performance)
   // =========================================================================
-  'chopper mini elektrik portable viral',
-  'chopper manual tarik serbaguna viral',
-  'alat potong sayur multifungsi slicer',
-  'mandoline slicer parutan serbaguna',
-  'alat pengupas buah praktis serbaguna',
-  'alat pemotong bawang cabai mini praktis',
-  'gunting dapur serbaguna stainless multifungsi',
-  'alat pemisah kuning telur praktis viral',
-  'alat pembuat dumpling pastel manual',
-  'alat pemeras jeruk lemon manual stainless',
-  'pemotong semangka melon praktis viral',
-  'alat pemotong kentang spiral praktis',
-  'food chopper blender mini portable',
-  'alat pelumat bawang putih press garlic',
-  'parutan keju kelapa stainless praktis',
-  'cetakan bakso manual praktis serbaguna',
-  'alat pengupas kulit udang praktis',
-  'alat pembuang biji apel buah praktis',
-  'alat pemotong nanas spiral stainless',
-  'alat pengiris daging beku manual slicer',
-  'alat perajang bawang manual putar praktis',
-  'alat pencacah daging manual serbaguna',
-  'alat pelubang kelapa muda praktis stainless',
-  'parutan wortel kentang 6 in 1 multifungsi',
-  'alat pencabut bulu ayam ikan stainless',
-  'alat pemotong alpukat 3 in 1 praktis',
-  'alat pengiris telur rebus praktis stainless',
-  'alat pemotong jagung serut stainless',
-  'alat pengupas sisik ikan stainless praktis',
-  'alat pemecah cangkang kepiting walnut',
-  'blender kapsul serbaguna mini cutter',
-  'alat pelumat kentang potato masher stainless',
-  'alat pengiris mentega keju butter slicer',
-  'alat pemeras santan kelapa manual mini',
-  'alat penusuk daging tenderizer empuk',
-  'gunting daging tulang unggas heavy duty',
-  'alat pemotong pizza roda stainless bulat',
-  'alat pembuka kaleng putar praktis aman',
-  'alat pembuka tutup botol toples serbaguna',
-  'parutan serbaguna wadah penampung baskom',
-  'alat pemipil jagung serbaguna praktis',
-  'alat pemotong kentang french fries cutter',
-  'alat peremas kentang stainless potato ricer',
-  'gunting daun bawang sayur 5 lapis stainless',
-  'alat pembersih sisik ikan dengan wadah',
-  'sendok pembuat bakso bakwan anti lengket',
-  'alat pencetak burger patty press manual',
-  'pemisah putih kuning telur stainless',
-  'alat pengupas nanas nenas corer slicer',
-  'pemotong telur rebus kawat stainless',
-  'sendok porsi es krim scoop trigger stainless',
-  'pemeras bawang putih rocker stainless garlic',
-  'alat pemotong keju kawat stainless steel',
-  'parutan keju putar rotary cheese grater',
-  'pengupas kulit jeruk lemon zester stainless',
-  'alat perajang rempah daun stainless herb cutter',
-  'alat pengocok telur semi otomatis putar tekan',
-  'alat pelindung jari iris sayur stainless cutter guard',
-  'pisau dapur chef knife stainless tajam anti karat',
-  'pisau kupas buah sayur mini cover pelindung',
-  'pisau roti kue gerigi stainless steel',
-  'pisau daging mini cleaver stainless dapur',
-  'alat pengasah pisau dapur praktis 3 tahap roda',
-  'batu asahan pisau dapur grit halus presisi',
-  'alat pemotong pisang sosis praktis stainless',
-  'pemotong mentimun spiral wortel slicer',
+  'review infinix note 40 pro indonesia',
+  'review poco x6 5g indonesia',
+  'review redmi note 13 pro 5g indonesia',
+  'review poco m6 pro indonesia',
+  'review samsung galaxy a15 5g indonesia',
+  'review samsung galaxy a25 5g indonesia',
+  'review iqoo z9x 5g indonesia',
+  'review iqoo z9 5g indonesia',
+  'review realme 12 5g indonesia',
+  'review realme 12 plus 5g indonesia',
+  'review tecno pova 6 pro 5g indonesia',
+  'review tecno camon 30 5g indonesia',
+  'review vivo y100 5g indonesia',
+  'review oppo reno 11f 5g indonesia',
+  'review infinix gt 20 pro 5g indonesia',
+  'review redmi note 14 pro 5g indonesia',
+  'review poco f6 indonesia',
+  'review samsung galaxy a35 5g indonesia',
+  'review vivo v30e indonesia',
+  'review realme 13 5g indonesia',
+  'review tecno spark 20 pro plus indonesia',
+  'review infinix hot 40 pro indonesia',
+  'review samsung galaxy m15 5g indonesia',
+  'review redmi note 13 5g indonesia',
+  'review oppo a79 5g indonesia',
 
   // =========================================================================
-  // 2. PERALATAN MASAK MINI, BAKING & GADGET KOMPOR (Mini Cooking & Baking)
+  // 2. KATEGORI SPESIFIKASI & KAMERA HP 2 JUTAAN KE ATAS
   // =========================================================================
-  'wajan penggorengan mini telur 4 lubang anti lengket',
-  'panci listrik mini serbaguna portable',
-  'alat pembuat waffle mini elektrik praktis',
-  'sutil silikon set anti panas food grade',
-  'timbangan digital dapur mini presisi',
-  'timer dapur digital magnetik masak',
-  'alat pengasah pisau dapur praktis 3 stage',
-  'alat pembuat es batu silikon pencet praktis',
-  'cetakan es batu bulat bola silikon viral',
-  'splash guard pelindung cipratan minyak kompor',
-  'alas silikon adonan kue baking anti lengket',
-  'alat pencetak kue kering biskuit praktis',
-  'capitan makanan silikon stainless food grade',
-  'termometer makanan digital masak dapur',
-  'alat pembuat crepes mini elektrik anti lengket',
-  'panci kukus mini elektrik serbaguna',
-  'cetakan takoyaki mini anti lengket teflon',
-  'wajan grill pan mini anti lengket pemanggang',
-  'mixer tangan mini elektrik portable usb',
-  'frother pengocok susu kopi mini elektrik',
-  'kertas baking parchment paper air fryer bulat',
-  'silikon pot air fryer reusable anti lengket',
-  'cetakan es loli popsicle silikon bpa free',
-  'dispenser adonan kue pencet pancake batter',
-  'spatula silikon tahan panas food grade set',
-  'kuas minyak silikon baking tahan panas',
-  'cetakan donat manual praktis adonan',
-  'rolling pin kayu silikon penggiling adonan',
-  'cetakan puding silikon bentuk bunga estetik',
-  'sendok takar bumbu dapur digital lcd',
-  'saringan tepung stainless putar manual praktis',
-  'pemanggang sandwich toaster mini elektrik',
-  'cetakan sushi roll manual praktis bazooka',
-  'cetakan onigiri nasi bento segitiga praktis',
-  'alat tusuk sate praktis pembuat sate cepat',
-  'cetakan martabak mini 7 lubang anti lengket',
-  'panci rebus mie telur mini stainless gagang',
-  'penutup silikon microwave anti cipratan',
-  'tatakan kompor gas pelindung api hemat gas',
-  'pematik api kompor gas elektrik usb recharge',
-  'wajan tamagoyaki teflon telur gulung jepang mini',
-  'sarung tangan oven silikon anti panas tebal',
-  'jepitan mangkok piring panas silikon stainless',
-  'alas tatakan panci panas silikon tahan panas',
-  'sendok ukur bumbu set stainless magnetic',
-  'saringan tirisan mie minyak serbaguna stainless',
-  'pembuat churros cetakan kue semprit manual',
-  'capitan gorengan stainless dengan saringan tirisan',
-  'tatakan sutil tutup panci silikon anti panas',
-  'cetakan kue pukis mini anti lengket teflon',
-  'centong nasi silikon anti lengket berdiri',
-  'sendok kuah sup sayur silikon gagang kayu',
-  'irus sayur kuah stainless gagang tahan panas',
-  'panci sauce pan mini anti lengket susu mie',
-  'wajan teflon mini penggorengan telur 12cm',
-  'pemanggang roti bakar lipat kompor gas',
-  'alat pembuat sempol sate telur gulung mini',
-  'capitan silikon gorengan barbecue anti panas',
-
-  // =========================================================================
-  // 3. WADAH BUMBU, BOTOL & PERABOTAN DAPUR KOMPAK (Tabletop Furniture & Storage)
-  // (CATATAN: HANYA perabot meja/tabletop kompak, BUKAN lemari atau rak besar!)
-  // =========================================================================
-  'botol minyak kuas silikon 2 in 1 anti tumpah',
-  'botol semprot minyak spray olive oil praktis',
-  'tempat bumbu putar serbaguna dapur viral',
-  'dispenser beras mini otomatis anti kutu praktis',
-  'kotak telur organizer kulkas tingkat otomatis',
-  'sealer plastik mini portable perekat makanan',
-  'tutup makanan silikon stretch elastis reusable',
-  'wadah penyimpanan makanan kedap udara mini',
-  'tempat sendok garpu tirisan mini anti debu',
-  'wadah tirisan cuci beras buah sayur praktis',
-  'botol bumbu dapur sendok terintegrasi praktis',
-  'wadah bumbu 4 sekat praktis sendok',
-  'tempat pisau dapur magnetic strip dinding',
-  'wadah penyimpanan sayur kulkas drain basket',
-  'kotak bumbu dapur putar 360 derajat mini',
-  'dispenser minyak goreng kaca otomatis tuang',
-  'wadah kantong teh kopi gula kedap udara',
-  'kotak penyimpanan bawang cabai mini kulkas',
-  'wadah bumbu dapur kaca sendok label estetik',
-  'tatakan sendok spatula silikon anti kotor praktis',
-  'toples kaca kedap udara tutup bambu estetik',
-  'wadah minyak bekas jelantah saringan stainless',
-  'kotak organizer bumbu sachet mini kulkas',
-  'penutup makanan payung tudung saji lipat',
-  'corong lipat silikon minyak air serbaguna',
-  'wadah pencuci beras sayur drain bowl putar',
-  'botol saus mayones kecap squeeze bottle putar',
-  'saringan teh kopi stainless reusable infuser',
-  'tempat pisau blok dapur minimalis tirisan',
-  'wadah bumbu sekat toples bumbu kaca sendok',
-  'kotak telur organizer kulkas roll gravitasi',
-  'dispenser sabun cuci piring sponge pump otomatis',
-  'tempat spons cuci piring gantung kran wastafel',
-  'wadah saringan tirisan minyak gorengan stainless',
-  'botol kecap minyak kaca otomatis buka tutup',
-  'gantungan alat masak dinding putar 360 serbaguna',
-  'rak bumbu meja 2 tingkat mini portable compact',
-  'klip penjepit bungkus snack kedap udara rapat',
-  'tikar pengering piring silikon dish drying mat',
-
-  // =========================================================================
-  // 4. PERLENGKAPAN DAPUR & PERLENGKAPAN MEMASAK LAINNYA (Kitchen Supplies & Tools)
-  // =========================================================================
-  'penjepit kantong plastik makanan sealer clip praktis',
-  'tutup panci silikon anti tumpah boil over safeguard',
-  'wadah tirisan sayur buah kulkas drainer serbaguna',
-  'kantong silikon penyimpan makanan ziplock reusable',
-  'corong tuang minyak bumbu stainless saringan mini',
-  'penutup mangkok silikon elastis tahan panas microwave',
-  'jepitan piring mangkok panas stainless silikon gripper',
-  'tatakan panci silikon sarang lebah anti panas meja',
-  'splash guard kompor pelindung cipratan minyak lipat',
-  'pematik api elektrik usb kompor gas tanpa gas',
-  'termometer minyak daging digital probe lcd dapur',
-  'timer dapur digital magnetik pengingat waktu masak',
-  'sendok takar digital timbangan bumbu lcd presisi',
-  'sendok takar bumbu stainless magnetik set komplit',
-  'silikon pot air fryer tahan panas anti lengket loyang',
-  'kertas minyak alas air fryer baking paper bulat',
-  'cetakan es batu silikon pencet lepas mudah',
-  'pembuat dumpling pastel pastelan manual praktis cetakan',
-  'sutil spatula silikon set spatula kuas kocokan',
-  'capitan makanan capitan kue silikon jepit makanan',
-  'gunting serbaguna dapur potong tulang ayam daging sk5',
-  'alat pemotong kentang sayur spiral tornado fries',
-  'parutan keju coklat putar rotary stainless steel',
-  'alat pemeras santan kelapa perasan manual praktis',
-  'sendok scoop es krim trigger release stainless',
-
-  // =========================================================================
-  // 5. ALAT KEBERSIHAN KHUSUS WASTAFEL & DAPUR MINI (Kitchen Cleaning Tools)
-  // =========================================================================
-  'dispenser sabun cuci piring otomatis sponge pump',
-  'spons cuci piring nano magic sponge pembersih kerak',
-  'sikat cuci piring dispenser sabun cair otomatis',
-  'spons kawat cuci piring sabut stainless anti gores',
-  'kain lap nano berserat pembersih minyak dapur',
-  'alat pembersih kerak wajan panci serbaguna',
-  'sikat pembersih botol tumbler sedotan set',
-  'sikat pembersih blender mata pisau dapur',
-  'alat pembersih sisik ikan stainless dengan wadah',
-  'sikat pembersih celah kompor wastafel serbaguna',
-  'spons cuci piring jaring busa tebal higienis anti bau'
+  'hp 2 jutaan terbaik kamera jernih ois',
+  'hp gaming 2 jutaan performa kencang',
+  'rekomendasi hp 2 jutaan layar amoled 120hz',
+  'rekomendasi hp 3 jutaan kamera stabil ois',
+  'spesifikasi hp 2 jutaan android terbaru',
+  'review smartphone 2 jutaan baterai awet',
+  'review hp gaming 3 jutaan chipset kencang',
+  'rekomendasi hp 2 jutaan ram 8gb 256gb',
+  'review kamera hp 2 jutaan hasil foto jernih',
+  'review hp mid range terbaik 2 jutaan',
+  'review smartphone layar lengkung 2 jutaan amoled',
+  'hp 2 jutaan chipset snapdragon terkencang',
+  'hp 2 jutaan chipset dimensity performa gaming',
+  'rekomendasi hp 2 jutaan fast charging kencang',
+  'review hp 2 jutaan kualitas kamera depan belakang',
+  'rekomendasi hp 2 jutaan terbaik 2026',
+  'review hp 3 jutaan layar 120hz performa flagship',
+  'hp 2 jutaan speaker stereo nfc baterai 5000mah',
+  'review hp 2 jutaan sensor sony kamera jernih',
+  'rekomendasi hp mid range 2 jutaan tahan air'
 ];
 
 export const TOOL_INDICATORS = [
@@ -469,12 +302,17 @@ export function isBulkyOrUnsuitableProduct(text = '') {
     return true;
   }
 
-  // 1B. Disqualify 'cara', 'tutorial', 'DIY', 'how to', 'do it yourself'
+  // 1B. Disqualify Phone Accessories / Parts / Non-Unit Products (Must be genuine Phone/Smartphone unit!)
+  if (/\b(?:casing|case\b|softcase|hardcase|tempered\s*glass|anti\s*gores|screen\s*protector|pelindung\s*layar|kabel\s*data|charger|kepala\s*charger|skin\s*hp|stiker\s*hp|kardus|dus\s*kosong|dummy|replika|tiruan|sparepart|lcd\s*hp|baterai\s*tanam|lem\s*lcd|gantungan\s*hp|strap\s*hp|holder\s*hp|stand\s*hp)\b/i.test(normalized)) {
+    return true;
+  }
+
+  // 1C. Disqualify 'cara', 'tutorial', 'DIY', 'how to', 'do it yourself'
   if (/\b(?:cara|tutorial|diy|how\s+to|do\s+it\s+yourself)\b/i.test(normalized)) {
     return true;
   }
 
-  // 1C. Factory / manufacturing / industrial process / bulky grills / agricultural machinery
+  // 1D. Factory / manufacturing / industrial process / bulky grills / agricultural machinery
   if (/\b(?:blackstone|weber|smoker|barbecue|bbq|pabrik|factory|manufacturing|industri|pembuatan|ternak|pakan|limbah|selep|pemipil|perontok|pemanen|traktor|chopper|choper|cacah|silase|janggel)\b/i.test(normalized)) {
     return true;
   }
@@ -1167,7 +1005,7 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const insecureTlsAgent = new https.Agent({ rejectUnauthorized: false });
 
 function formatKeywordToProductTitle(keyword) {
-  if (!keyword) return 'Alat Dapur Praktis Viral';
+  if (!keyword) return 'Smartphone 2 Jutaan Terbaik';
   return keyword
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -1192,7 +1030,7 @@ export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
         if (!titleCandidate || isGenericShopeeTitle(titleCandidate)) {
           titleCandidate = formatKeywordToProductTitle(keyword);
         }
-        const descCandidate = cleanDescription(pageMeta.description || result.snippet || '') || `Produk alat dapur praktis: ${titleCandidate}.`;
+        const descCandidate = cleanDescription(pageMeta.description || result.snippet || '') || `Smartphone spesifikasi andal: ${titleCandidate}. Layar AMOLED 120Hz, performa kencang, dan kamera jernih.`;
 
         if (isBulkyOrUnsuitableProduct(titleCandidate) || isBulkyOrUnsuitableProduct(descCandidate) || isBulkyOrUnsuitableProduct(keyword)) {
           continue;
@@ -1223,7 +1061,7 @@ export async function discoverSingleShopeeProduct(keyword, seen = new Set()) {
   return {
     keyword,
     title: formattedTitle,
-    description: `Produk alat dapur praktis: ${formattedTitle}. Kualitas terjamin, multifungsi dan sangat cocok untuk kebutuhan masak sehari-hari.`,
+    description: `Smartphone ${formattedTitle} dengan spesifikasi andal, layar AMOLED tajam, performa kencang, dan kualitas kamera depan belakang jernih.`,
     url: shopeeUrl,
   };
 }

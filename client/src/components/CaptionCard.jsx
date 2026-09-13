@@ -163,9 +163,15 @@ function enrichCaptionForDisplay(caption, result, platform = 'ytcliper') {
       tags.add('#fashionhaul');
       tags.add('#spilloutfit');
     }
-    if (/hp|charger|kabel|holder|tws|headset|speaker|elektronik|lampu|kipas/i.test(combined)) {
-      tags.add('#gadgetunik');
-      tags.add('#elektronikmurah');
+    if (/hp|smartphone|handphone|android|infinix|poco|redmi|galaxy|samsung|iqoo|realme|tecno|vivo|oppo|xiaomi|charger|kabel|holder|tws|headset|speaker|elektronik/i.test(combined)) {
+      tags.add('#reviewhp');
+      tags.add('#spesifikasihp');
+      tags.add('#hp2jutaan');
+      tags.add('#hpmurah');
+      tags.add('#gadgetin');
+      tags.add('#techtok');
+      tags.add('#smartphone');
+      tags.add('#hpgaming');
     }
     tags.add('#barangunik');
     tags.add('#viral');

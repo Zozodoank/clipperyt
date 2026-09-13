@@ -1495,7 +1495,7 @@ export async function runStage1Pipeline({
       onProgress: updateProgress,
     });
 
-    const actualSilentDuration = (await getMediaDurationSec(silentOutputPath)) || highlight.duration || 33;
+    const actualSilentDuration = (await getMediaDurationSec(silentOutputPath)) || highlight.duration || 55;
     highlight.duration = actualSilentDuration;
 
     updateProgress({ step: 'frames_trimmed', message: 'Sampling frames from trimmed video for AI scripting...', progress: 72, status: 'running' });
@@ -1521,22 +1521,23 @@ export async function runStage1Pipeline({
         onProgress: updateProgress,
       });
     } catch (scriptErr) {
-      console.warn(`[Job ${jobId}] AI Scripting failed (${scriptErr.message}). Menggunakan smart fallback naskah...`);
-      const fallbackHook = highlight.productHook || `Masih repot pakai alat lama yang bikin capek? Untung ada ${productTitle || 'produk ini'}!`;
+      console.warn(`[Job ${jobId}] AI Scripting failed (${scriptErr.message}). Menggunakan smart fallback naskah smartphone review...`);
+      const fallbackHook = highlight.productHook || `Cari smartphone 2 jutaan dengan spesifikasi kencang dan kamera juara? ${productTitle || 'HP ini'} jawabannya!`;
       const fallbackVoiceScript = `[00:00] ${fallbackHook}
-[00:04] Praktis digunakan, kualitas premium, dan bikin kerjaan cepat beres.
-[00:09] Bahannya tebal, awet, dan nyaman dipakai sehari-hari.
-[00:14] Harganya murah meriah banget, gak bikin kantong jebol!
-[00:18] Langsung cek link pembelian di deskripsi sekarang sebelum kehabisan!`;
+[00:08] Desainnya terlihat mewah dan ergonomis, ditambah layar AMOLED 120Hz yang sangat mulus dan responsif untuk scrolling harian.
+[00:19] Dapur pacunya bertenaga dengan chipset kencang, RAM lega, dan sudah didukung sistem operasi Android terbaru yang bersih dan stabil.
+[00:31] Baterai 5000 mAh awet seharian penuh dan teknologi fast charging mempersingkat waktu pengisian daya tanpa menunggu lama.
+[00:41] Sektor kamera sangat memukau, kamera utama menghasilkan foto tajam dengan dynamic range luas, rekaman video stabil, serta kamera depan jernih untuk selfie.
+[00:51] Karena link di video Shorts sudah tidak bisa diklik langsung, link pembelian resmi dengan promo terbaik sudah saya cantumkan di deskripsi video ya! Buruan cek sebelum kehabisan.`;
 
       scriptData = {
         sampleContext: {
-          productName: productTitle || videoMeta?.title || 'Produk Pilihan',
-          videoDuration: `${Math.round(highlight.duration || 24)} detik`,
-          targetAudience: 'Pengguna harian dan pembeli online',
-          coreProblem: 'Cara konvensional yang merepotkan dan memakan waktu',
-          keyFeatures: ['Praktis & Ringkas', 'Kualitas Teruji', 'Mudah Digunakan'],
-          buyingTrigger: 'Harga murah meriah dan solusi instan',
+          productName: productTitle || videoMeta?.title || 'Smartphone 2 Jutaan Terbaik',
+          videoDuration: `${Math.round(highlight.duration || 55)} detik`,
+          targetAudience: 'Pencari smartphone 2 jutaan, mobile gamer, dan penikmat konten video',
+          coreProblem: 'Mencari smartphone kencang, layar AMOLED 120Hz, dan kamera jernih dengan harga terjangkau',
+          keyFeatures: ['Layar AMOLED 120Hz', 'Chipset Kencang Android 16', 'Kamera Utama OIS & Selfie Jernih', 'Baterai 5000 mAh Fast Charging'],
+          buyingTrigger: 'Review ahli, performa tinggi harga 2 jutaan',
         },
         scenes: [
           {
@@ -1608,7 +1609,7 @@ export async function runStage1Pipeline({
     const rawVoiceScript = scriptData.voiceoverScript || scriptData.aiStudioPrompt || '';
     const voiceoverFileName = `voiceover_${jobId}.mp3`;
     const autoVoiceoverPath = path.join(uploadsDir, voiceoverFileName);
-    const silentDurationSec = (await getMediaDurationSec(silentOutputPath)) || highlight.duration || 20;
+    const silentDurationSec = (await getMediaDurationSec(silentOutputPath)) || highlight.duration || 55;
 
     const activeTtsProvider = (options.ttsProvider || process.env.TTS_PROVIDER || 'gemini_tts').toLowerCase().trim();
     const isGeminiTts = activeTtsProvider === 'gemini_tts';
